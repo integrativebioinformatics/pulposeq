@@ -320,7 +320,7 @@ Set `headcrop` and `tailcrop` to `0` when restranding. Restrander locates primer
 
 #### The success gate
 
-Restranding is not assumed to have worked. Restrander reports how many reads it oriented, and the pipeline checks that fraction against `restrand_min_frac` (default `0.80`) **for every sample**. Any sample below the threshold stops the run, with an error listing every sample's fraction.
+Restranding is not assumed to always worked. Restrander reports how many reads it oriented, and the pipeline checks that fraction against `restrand_min_frac` (default `0.80`) **for every sample**. Any sample below the threshold stops the run, with an error listing every sample's fraction.
 
 The check runs immediately after restranding rather than before Bambu, so a failure costs minutes rather than the hours Chopper and minimap2 would have spent first.
 
