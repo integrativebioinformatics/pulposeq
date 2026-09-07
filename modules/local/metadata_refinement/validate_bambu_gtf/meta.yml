@@ -1,0 +1,62 @@
+name: "validate_bambu_gtf"
+description: Validate the Bambu extended annotations GTF to ensure it only contains transcripts present in validated count matrices.
+keywords:
+  - gtf
+  - subset
+  - transcript-filtering
+  - bambu
+  - validation
+tools:
+  - awk:
+      description: Pattern scanning and processing language.
+      homepage: https://www.gnu.org/software/gawk/
+      licence: ["GPL-3.0-or-later"]
+  - bash:
+      description: GNU Bourne-Again SHell.
+      homepage: https://www.gnu.org/software/bash/
+      licence: ["GPL-3.0-or-later"]
+
+input:
+  - gtf_file:
+      type: file
+      description: GTF file with all transcripts (known + novel) from Bambu.
+      pattern: "*.gtf"
+  - counts_transcript:
+      type: file
+      description: Validated transcript-level read counts.
+      pattern: "*.{txt,csv}"
+  - full_length_counts_transcript:
+      type: file
+      description: Validated full-length transcript counts.
+      pattern: "*.{txt,csv}"
+  - unique_counts_transcript:
+      type: file
+      description: Validated unique read counts per transcript.
+      pattern: "*.{txt,csv}"
+
+output:
+  - annotations_validated_gtf:
+      type: file
+      description: GTF subset containing transcripts present in the validated counts matrix.
+      pattern: "BambuOutput_annotations_validated.gtf"
+  - fullLength_validated_gtf:
+      type: file
+      description: GTF subset containing transcripts present in the validated full-length counts matrix.
+      pattern: "BambuOutput_fullLength_validated.gtf"
+  - uniquelyMapped_validated_gtf:
+      type: file
+      description: GTF subset containing transcripts present in the validated unique counts matrix.
+      pattern: "BambuOutput_uniquelyMapped_validated.gtf"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"
+  - "@gleisonm"
+  - "@lfreitasl"
+maintainers:
+  - "@borgessbarbara"
+  - "@gleisonm"
+  - "@lfreitasl"

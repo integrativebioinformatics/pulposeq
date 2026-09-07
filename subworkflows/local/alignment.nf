@@ -2,7 +2,8 @@
 // MODULES: MINIMAP2_ALIGN and NANOCOMP
 //
 include { MINIMAP2_ALIGN                  } from '../../modules/nf-core/minimap2/align/main'
-include { NANOCOMP as NANOCOMP_MAPPING    } from '../../modules/nf-core/nanocomp/main'
+include { NANOCOMP as NANOCOMP_MINIMAP2   } from '../../modules/nf-core/nanocomp/main'
+include { nanocompSkips                   } from './utils_nfcore_pulposeq_pipeline'
 
 /*
 ========================================================================================
@@ -45,20 +46,31 @@ workflow ALIGNMENT {
     MINIMAP2_ALIGN.out.bam
         .set { ch_bam }
 
-    if (!params.skip_alignment_qc) {
+    // The .bai files were always produced and published, but ch_index was left as
+    // the empty channel declared above, so nothing downstream could consume them.
+    // An empty channel yields zero tasks rather than an error, so any process fed
+    // from here would have been skipped silently.
+    MINIMAP2_ALIGN.out.index
+        .set { ch_index }
+
+    // The alignment report is selected through --skip_nanocomp minimap2, alongside
+    // the read-level ones, rather than through a flag of its own: it is the same
+    // tool answering the same question one step later, and it is the most expensive
+    // of the four, so it is the one most often worth dropping on large runs.
+    if (!('minimap2' in nanocompSkips())) {
 
         ch_bam
             .collect { item -> item[1] }
             .map { filelist -> [[id: "All"], filelist] }
             .set { ch_combined_mapping }
 
-        NANOCOMP_MAPPING (
+        NANOCOMP_MINIMAP2 (
             ch_combined_mapping
         )
 
-        ch_alignment_qc = ch_alignment_qc.mix(NANOCOMP_MAPPING.out.stats_txt.collect { item -> item[1] }.ifEmpty([]))
+        ch_alignment_qc = ch_alignment_qc.mix(NANOCOMP_MINIMAP2.out.stats_txt.collect { item -> item[1] }.ifEmpty([]))
 
-        ch_versions = ch_versions.mix(NANOCOMP_MAPPING.out.versions.ifEmpty(null))
+        ch_versions = ch_versions.mix(NANOCOMP_MINIMAP2.out.versions.ifEmpty(null))
     }
 
     emit:

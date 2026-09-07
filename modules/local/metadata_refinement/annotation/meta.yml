@@ -1,0 +1,84 @@
+name: "annotation"
+description: Attach biotype and classification attributes to the validated GTFs, and build the final annotation the genomic context figures are drawn from.
+keywords:
+  - annotation
+  - gtf
+  - biotype
+  - lncRNA
+  - metadata
+tools:
+  - r:
+      description: R statistical computing environment.
+      homepage: https://www.r-project.org/
+      licence: ["GPL-2.0-or-later"]
+  - rtracklayer:
+      description: R interface to genome browsers and their annotation tracks.
+      homepage: https://bioconductor.org/packages/rtracklayer/
+      licence: ["Artistic-2.0"]
+  - genomicranges:
+      description: Representation and manipulation of genomic intervals.
+      homepage: https://bioconductor.org/packages/GenomicRanges/
+      licence: ["Artistic-2.0"]
+
+input:
+  - annotations_gtf:
+      type: file
+      description: Validated annotation GTF, staged under `input/` so the script can write its result under the same basename.
+      pattern: "BambuOutput_annotations_validated.gtf"
+  - fulllength_gtf:
+      type: file
+      description: Validated full-length transcript GTF, staged under `input/`.
+      pattern: "BambuOutput_fullLength_validated.gtf"
+  - unique_gtf:
+      type: file
+      description: Validated uniquely-mapped transcript GTF, staged under `input/`.
+      pattern: "BambuOutput_uniquelyMapped_validated.gtf"
+  - known_metadata:
+      type: file
+      description: Metadata for the reference-matching transcripts.
+      pattern: "annotated_transcriptome_metadata.csv"
+  - novel_metadata:
+      type: file
+      description: Combined metadata for the novel candidates, all three routed categories.
+      pattern: "novel_transcripts_validated_metadata.csv"
+  - annotation:
+      type: file
+      description: Reference annotation GTF, read for CDS and UTR features.
+      pattern: "*.gtf"
+  - r_script:
+      type: file
+      description: The annotation.R script staged from `bin/`.
+      pattern: "annotation.R"
+  - gtf_utils:
+      type: file
+      description: Shared GTF metadata helpers sourced by the script.
+      pattern: "gtf_annotation_utils.R"
+
+output:
+  - annotations_validated_gtf:
+      type: file
+      description: Validated annotation with biotype and classification attributes attached.
+      pattern: "BambuOutput_annotations_validated.gtf"
+  - fullLength_validated_gtf:
+      type: file
+      description: Validated full-length transcripts, enriched the same way.
+      pattern: "BambuOutput_fullLength_validated.gtf"
+  - uniquelyMapped_validated_gtf:
+      type: file
+      description: Validated uniquely-mapped transcripts, enriched the same way.
+      pattern: "BambuOutput_uniquelyMapped_validated.gtf"
+  - final_gtf:
+      type: file
+      description: >-
+        Known transcripts re-read from the reference with CDS and UTR features intact,
+        plus the novel models. Those features are what let plotTranscripts draw a
+        coding region thicker than its UTRs, so this is the annotation the genomic
+        context figures use.
+      pattern: "annotations_final.gtf"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"

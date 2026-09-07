@@ -1,0 +1,80 @@
+name: "genomic_context"
+description: Draw coverage and transcript models together at selected loci — known genes carrying novel isoforms, and the sense-intronic candidates windowed on their whole host intron.
+keywords:
+  - visualisation
+  - coverage
+  - transcript-models
+  - plotgardener
+  - lncRNA
+tools:
+  - r:
+      description: R statistical computing environment.
+      homepage: https://www.r-project.org/
+      licence: ["GPL-2.0-or-later"]
+  - plotgardener:
+      description: Coordinate-based genomic figure generation in R.
+      homepage: https://bioconductor.org/packages/plotgardener/
+      licence: ["MIT"]
+  - rtracklayer:
+      description: R interface to genome browsers and their annotation tracks.
+      homepage: https://bioconductor.org/packages/rtracklayer/
+      licence: ["Artistic-2.0"]
+  - txdbmaker:
+      description: Builds TxDb objects from GFF/GTF, used for the transcript track.
+      homepage: https://bioconductor.org/packages/txdbmaker/
+      licence: ["Artistic-2.0"]
+
+input:
+  - gtf_file:
+      type: file
+      description: Validated, enriched transcriptome GTF carrying class code, classification and reference-gene attributes.
+      pattern: "*.gtf"
+  - bigwigs:
+      type: file
+      description: Every sample's coverage track, collected.
+      pattern: "*.bw"
+  - counts:
+      type: file
+      description: Validated transcript counts, one column per sample. Decides which candidates have coverage worth drawing and which samples the figure marks in bold.
+      pattern: "*.txt"
+  - fl_counts:
+      type: file
+      description: Validated full-length transcript counts. Membership is a zero/non-zero fact used in the candidate ordering.
+      pattern: "*.txt"
+  - annotation:
+      type: file
+      description: Reference annotation, for annotated gene and intron structure.
+      pattern: "*.gtf"
+  - r_script:
+      type: file
+      description: The genomic_context.R script staged from `bin/`.
+      pattern: "genomic_context.R"
+
+output:
+  - figures:
+      type: file
+      description: One panel per selected gene.
+      pattern: "genomic_context_*.png"
+  - candidates:
+      type: file
+      description: The loci drawn, with their windows and isoform counts.
+      pattern: "genomic_context_candidates.csv"
+  - intronic_figures:
+      type: file
+      description: One panel per sense-intronic candidate, windowed on the whole host intron.
+      pattern: "intronic_context_*.png"
+  - intronic_candidates:
+      type: file
+      description: The sense-intronic candidates drawn, with the structure and counts behind their ordering.
+      pattern: "intronic_context_candidates.csv"
+  - regions_gtf:
+      type: file
+      description: The plotted regions as a small GTF. Built to feed makeTxDbFromGFF, but loadable in IGV beside the published bigWigs.
+      pattern: "genomic_context_regions.gtf"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"

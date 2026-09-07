@@ -1,16 +1,53 @@
-input: "/full/path/to/test_data/samplesheet.csv"
-outdir: "/full/path/to/longnoncoder/test_data/results"
+# ==============================================================================
+#  pulposeq test run
+#  Chromosome 1 subset of ENCODE RUSH AD Project samples, sequenced with PacBio.
+#
+#      nextflow run . -profile test,<docker|singularity|apptainer> -params-file test_data/testing.yml
+#
+#  Paths below must be edited to your checkout before running.
+# ==============================================================================
 
-skip_qc: false
-skip_filtering: false
-skip_alignment: false
-skip_alignment_qc: false
+# ------------------------------------------------------------------------------
+#  Input and output
+# ------------------------------------------------------------------------------
+input: "/full/path/to/pulposeq/test_data/samplesheet.csv"
+outdir: "/full/path/to/pulposeq/test_data/results"
+
+# ------------------------------------------------------------------------------
+#  Steps to skip
+# ------------------------------------------------------------------------------
+skip_chopper: false
+skip_minimap2: false
+skip_bambu: false
 skip_class: false
+skip_nanocomp: null
 
-reference: "/full/path/to/longnoncoder/test_data/references/Homo_sapiens.GRCh38.dna.chromosome.1.fa"
+# ------------------------------------------------------------------------------
+#  Sequencing library
+# ------------------------------------------------------------------------------
+library: "PacBio"
 
-annotation: "/full/path/to/longnoncoder/test_data/references/Homo_sapiens.GRCh38.114.chr1.gtf"
+# PacBio reads are oriented upstream by lima in PacBio's own workflow, so the reads
+# on disk already have read strand matching RNA strand.
+stranded_library: true
 
-organism: 'Homo_sapiens'
-ensembl_organism_dataset: 'hsapiens_gene_ensembl'
-ensembl_version: 114
+# No restranding settings are needed here. Restrander runs only for ONT_cDNA with
+# stranded_library false; PacBio and ONT_DRS are oriented by construction, so the
+# restrand_* parameters are ignored on this dataset and restrand_kit is not required.
+#
+# To exercise the restranding path, point this at an unoriented ONT cDNA dataset and
+# set library: "ONT_cDNA", stranded_library: false and a restrand_kit matching the
+# chemistry.
+
+# ------------------------------------------------------------------------------
+#  Reference files
+# ------------------------------------------------------------------------------
+reference: "/full/path/to/pulposeq/test_data/references/Homo_sapiens.GRCh38.dna.chromosome.1.fa"
+annotation: "/full/path/to/pulposeq/test_data/references/Homo_sapiens.GRCh38.116.chr1.gtf"
+
+# ------------------------------------------------------------------------------
+#  Coding potential prediction
+# ------------------------------------------------------------------------------
+# CPC2 needs no organism. To run the RNAmining path instead, set
+# coding_potential_pred: "rnamining" and organism: "Homo_sapiens".
+coding_potential_pred: "cpc2"

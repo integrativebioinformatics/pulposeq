@@ -1,0 +1,54 @@
+name: "bam_coverage"
+description: Compute per-base genome coverage from a sorted BAM and write it as a bigWig track, one per sample.
+keywords:
+  - coverage
+  - bigwig
+  - bam
+  - visualisation
+tools:
+  - r:
+      description: R statistical computing environment.
+      homepage: https://www.r-project.org/
+      licence: ["GPL-2.0-or-later"]
+  - rtracklayer:
+      description: R interface to genome browsers and their annotation tracks, used here to export bigWig.
+      homepage: https://bioconductor.org/packages/rtracklayer/
+      licence: ["Artistic-2.0"]
+  - genomicalignments:
+      description: Representation and manipulation of short genomic alignments.
+      homepage: https://bioconductor.org/packages/GenomicAlignments/
+      licence: ["Artistic-2.0"]
+  - rsamtools:
+      description: Binary alignment (BAM) file interface for R.
+      homepage: https://bioconductor.org/packages/Rsamtools/
+      licence: ["MIT"]
+
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information, e.g. `[ id:'sample1' ]`.
+  - bam:
+      type: file
+      description: Coordinate-sorted alignments.
+      pattern: "*.bam"
+  - bai:
+      type: file
+      description: Index for the alignments.
+      pattern: "*.bai"
+  - r_script:
+      type: file
+      description: The bam_coverage.R script staged from `bin/`.
+      pattern: "bam_coverage.R"
+
+output:
+  - bigwig:
+      type: file
+      description: Genome-wide per-base coverage. Two to three orders of magnitude smaller than the alignments it comes from, so this is the form of the data that travels off the cluster.
+      pattern: "*.bw"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"

@@ -1,0 +1,20 @@
+{
+    "name": "custom-example",
+    "description": "Template for a protocol not covered by --restrand_kit. Replace the tso and rtp sequences with the strand-switching and reverse-transcription primers of your chemistry, then pass this file with --restrand_config. See README.md in this directory for what each field does.",
+    "pipeline": [
+        {
+            "type": "poly",
+            "tail-length": 12,
+            "search-size": 200
+        },
+        {
+            "type": "primer",
+            "tso": "TTTCTGTTGGTGCTGATATTGCTGGG",
+            "rtp": "ACTTGCCTGTCGCTCTATCTTCTTTTTTTTTT",
+            "report-artefacts": true
+        }
+    ],
+    "silent": false,
+    "exclude-unknowns": true,
+    "error-rate": 0.25
+}
