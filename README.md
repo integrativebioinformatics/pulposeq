@@ -28,16 +28,6 @@ We can describe each step of the workflow as follows:
 15. Provide a report and data visualization for the full transcriptome, with emphasis on lncRNAs ([Quarto](https://quarto.org/), [tidyverse](https://tidyverse.org/), [cowplot](https://cran.r-project.org/web/packages/cowplot/index.html), [scales](https://cran.r-project.org/web/packages/scales/index.html), etc)
 16. Gather all possible QC information from the previous steps ([MultiQC](https://github.com/MultiQC/MultiQC "MultiQC"))
 
-**What you get**
-
-| Path | |
-|---|---|
-| `transcriptome_report/report.html` | The self-contained report, every figure embedded |
-| `bambu_validated/` | Curated count matrices, annotations and the curation yield |
-| `novel_transcripts/`, `ref_transcripts/` | Metadata `.csv` and `GTF` per category |
-| `genomic_context/` | Coverage and transcript models drawn at selected loci |
-| `coverage/*.bw` | Per-sample coverage as bigWig — two to three orders of magnitude smaller than the alignments, so this is the form of the data meant to leave the cluster. Load them in IGV to explore any region beyond the windows the pipeline chose to draw |
-
 ## Usage
 
 pulposeq is compatible with **Ensembl or GENCODE** reference genomes and annotations. Transcript and gene biotypes are read directly from the annotation you supply, so no Ensembl release or BioMart dataset needs to be declared.
@@ -48,8 +38,7 @@ Coding potential is predicted with [CPC2](https://github.com/gao-lab/CPC2_standa
 
 > *Homo sapiens, Mus musculus, Danio rerio, Anolis carolinensis, Chrysemys picta bellii, Crocodylus porosus, Eptatretus burgeri, Gallus gallus, Latimeria chalumnae, Monodelphis domestica, Notechis scutatus, Ornithorhynchus anatinus, Petromyzon marinus, Rattus norvegicus, Sphenodon punctatus,* and *Xenopus tropicalis.*
 
-> [!WARNING]
-> RNAmining is currently under review and is **not recommended**. On this pipeline's test data it classified 86 of 100 GENCODE protein-coding transcripts as non-coding, where CPC2 misclassified 1. It is kept selectable so earlier runs can be reproduced and the cause investigated. See [Coding potential](docs/usage.md#coding-potential).
+See [Coding potential](docs/usage.md#coding-potential).
 
 > [!WARNING]
 > pulposeq requires Nextflow `>=26.04.0`, where the strict syntax parser is enabled by default. Make sure to setup appropriate configuration. See the current documentation at [Seqera Docs](https://docs.seqera.io/nextflow/strict-syntax).
