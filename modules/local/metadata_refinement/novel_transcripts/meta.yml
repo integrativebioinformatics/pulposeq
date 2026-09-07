@@ -30,9 +30,9 @@ input:
       type: file
       description: GFFcompare tmap file mapping query to reference transcripts.
       pattern: "*.tmap"
-  - rnamining_predictions:
+  - coding_predictions:
       type: file
-      description: Coding potential predictions from RNAmining.
+      description: RNAMINING prediction file with ID, prediction and score TSV columns, preceded by the tool header.
       pattern: "*.txt"
   - tx_counts:
       type: file
@@ -42,6 +42,13 @@ input:
       type: file
       description: Gene-level read counts from Bambu.
       pattern: "*.txt"
+  - se_rds:
+      type: file
+      description: >-
+        Transcript-level SummarizedExperiment from Bambu. Read for
+        txClassDescription and NDR, which exist only in this object -- the
+        extended annotation GTF does not carry them.
+      pattern: "se_multiSample.rds"
   - r_script:
       type: file
       description: Executable R script for novel transcripts processing.
@@ -63,7 +70,7 @@ output:
   - novel_combined_metadata:
       type: file
       description: Combined metadata CSV for novel lncRNAs and protein-coding transcripts.
-      pattern: "novel_pc_lnc_RNAs_metadata.csv"
+      pattern: "novel_transcripts_validated_metadata.csv"
   - novel_lncrnas_gtf:
       type: file
       description: GTF containing novel lncRNA transcripts.
@@ -75,7 +82,7 @@ output:
   - novel_gtf:
       type: file
       description: GTF containing all novel transcripts.
-      pattern: "novel_transcripts.gtf"
+      pattern: "novel_transcripts_validated.gtf"
   - novel_lncrna_exon_lengths:
       type: file
       description: Exon length distribution for novel lncRNA transcripts.
@@ -87,11 +94,11 @@ output:
   - novel_tx_counts:
       type: file
       description: Transcript-level counts for novel lncRNAs and protein-coding transcripts.
-      pattern: "bambu_novel_pc_lnc_RNA_tx_counts.csv"
+      pattern: "bambu_novel_tx_counts.csv"
   - novel_gene_counts:
       type: file
       description: Gene-level counts for novel lncRNAs and protein-coding transcripts.
-      pattern: "bambu_novel_pc_lnc_RNA_gene_counts.csv"
+      pattern: "bambu_novel_gene_counts.csv"
   - versions:
       type: file
       description: File containing software versions.

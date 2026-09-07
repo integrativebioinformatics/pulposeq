@@ -126,7 +126,7 @@ process_gene_file() {
 
 # --- Main Logic ---
 
-echo "Starting validation and subsetting process..."
+echo "Starting validation process..."
 
 check_metadata_file
 
@@ -146,7 +146,7 @@ for input_file in "${TX_INPUT_FILES[@]}"; do
     fi
 
     # Generate output filename
-    base_name=$(basename "$input_file" _subset.txt)
+    base_name=$(basename "$input_file" _filter.txt)
     output_file="${SCRIPT_DIR}/${base_name}_validated.txt"
 
     # Prevent overwriting the input file
@@ -158,12 +158,12 @@ for input_file in "${TX_INPUT_FILES[@]}"; do
     process_transcript_file "$input_file" "$output_file"
 
     if [ -s "$output_file" ]; then
-        echo "✓ Validated subset file '$(basename "$output_file")' created successfully."
+        echo "✓ Validated file '$(basename "$output_file")' created successfully."
     else
         if [ -f "$output_file" ]; then
-            echo "⚠ Validated subset file '$(basename "$output_file")' created, but it might be empty or only contain the header."
+            echo "⚠ Validated file '$(basename "$output_file")' created, but it might be empty or only contain the header."
         else
-            echo "✗ Error: Failed to create validated subset file '$(basename "$output_file")'."
+            echo "✗ Error: Failed to create validated file '$(basename "$output_file")'."
         fi
     fi
 
@@ -182,7 +182,7 @@ if [ -f "$tx_validated_file" ] && [ -s "$tx_validated_file" ]; then
                 continue
             fi
 
-            base_name=$(basename "$input_file" _subset.txt)
+            base_name=$(basename "$input_file" _filter.txt)
             output_file="${SCRIPT_DIR}/${base_name}_validated.txt"
 
             if [ "$(realpath "$input_file")" == "$(realpath "$output_file")" ]; then
@@ -193,12 +193,12 @@ if [ -f "$tx_validated_file" ] && [ -s "$tx_validated_file" ]; then
             process_gene_file "$input_file" "$output_file"
 
             if [ -s "$output_file" ]; then
-                echo "✓ Validated subset file '$(basename "$output_file")' created successfully."
+                echo "✓ Validated file '$(basename "$output_file")' created successfully."
             else
                 if [ -f "$output_file" ]; then
-                    echo "⚠ Validated subset file '$(basename "$output_file")' created, but it might be empty or only contain the header."
+                    echo "⚠ Validated file '$(basename "$output_file")' created, but it might be empty or only contain the header."
                 else
-                    echo "✗ Error: Failed to create validated subset file '$(basename "$output_file")'."
+                    echo "✗ Error: Failed to create validated file '$(basename "$output_file")'."
                 fi
             fi
 
@@ -215,18 +215,18 @@ fi
 # Clean up temporary files
 rm -f "$TEMP_TXID_FILE" "$TEMP_GENEID_FILE"
 
-echo "Validation and subsetting process completed."
+echo "Validation and filtering process completed."
 echo ""
 echo "Generated files:"
 for input_file in "${TX_INPUT_FILES[@]}"; do
-    base_name=$(basename "$input_file" _subset.txt)
+    base_name=$(basename "$input_file" _filter.txt)
     output_file="${SCRIPT_DIR}/${base_name}_validated.txt"
     if [ -f "$output_file" ]; then
         echo "  - $(basename "$output_file")"
     fi
 done
 for input_file in "${GENE_INPUT_FILES[@]}"; do
-    base_name=$(basename "$input_file" _subset.txt)
+    base_name=$(basename "$input_file" _filter.txt)
     output_file="${SCRIPT_DIR}/${base_name}_validated.txt"
     if [ -f "$output_file" ]; then
         echo "  - $(basename "$output_file")"

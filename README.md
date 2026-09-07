@@ -1,5 +1,5 @@
 ## integrativebioinformatics/pulposeq <img src="figures/logo.svg" align=right height="200px"/>
-[![Open in GitHub Codespaces](https://img.shields.io/badge/Open_In_GitHub_Codespaces-black?labelColor=grey&logo=github)](https://github.com/codespaces/new/integrativebioinformatics/pulposeq) [![Nextflow](https://img.shields.io/badge/version-%E2%89%A525.10.4-green?style=flat&logo=nextflow&logoColor=white&color=%230DC09D&link=https%3A%2F%2Fnextflow.io)](https://www.nextflow.io/) [![nf-core template version](https://img.shields.io/badge/nf--core_template-4.0.2-green?style=flat&logo=nfcore&logoColor=white&color=%2324B064&link=https%3A%2F%2Fnf-co.re)](https://github.com/nf-core/tools/releases/tag/4.0.2) [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/) [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
+[![Open in GitHub Codespaces](https://img.shields.io/badge/Open_In_GitHub_Codespaces-black?labelColor=grey&logo=github)](https://github.com/codespaces/new/integrativebioinformatics/pulposeq) [![Nextflow](https://img.shields.io/badge/version-%E2%89%A526.04.0-green?style=flat&logo=nextflow&logoColor=white&color=%230DC09D&link=https%3A%2F%2Fnextflow.io)](https://www.nextflow.io/) [![nf-core template version](https://img.shields.io/badge/nf--core_template-4.0.2-green?style=flat&logo=nfcore&logoColor=white&color=%2324B064&link=https%3A%2F%2Fnf-co.re)](https://github.com/nf-core/tools/releases/tag/4.0.2) [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/) [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 
 `pulposeq` is a Nextflow pipeline designed for isoform-level lncRNA discovery and characterization from long-read RNA-seq data. The workflow encompasses QC, mapping, transcriptome assembly and quantification, followed by a detailed final characterization of the entire transcriptome with particular emphasis on lncRNA structure and isoforms across known annotations and novel candidates.
 
@@ -12,26 +12,47 @@ For more details and further functionality, please refer to the [usage](docs/usa
 We can describe each step of the workflow as follows:
 
 1.  Quality control of reads ([NanoComp](https://github.com/wdecoster/nanocomp "wdecoster/nanocomp"))
-2.  Filtering and trimming ([chopper](https://github.com/wdecoster/chopper "wdecoster/chopper"))
-3.  Mapping to a genome reference ([minimap2](https://github.com/lh3/minimap2 "lh3/minimap2") and [samtools](https://github.com/samtools/samtools "samtools"))
-4.  Quality control of mapped reads ([NanoComp](https://github.com/wdecoster/nanocomp "wdecoster/nanocomp"))
-5.  Transcriptome Assembly ([Bambu](https://www.bioconductor.org/packages/release/bioc/html/bambu.html))
-6.  Compare novel transcripts to the annotation reference ([GffCompare](https://github.com/gpertea/gffcompare "gpertea/gffcompare"))
-7.  Convert novel transcripts `GTF` file to `FASTA` ([GffRead](https://github.com/gpertea/gffread "gpertea/gffread"))
-8.  Predict transcripts as protein-coding or non-coding ([RNAmining](https://gitlab.com/integrativebioinformatics/RNAmining "integrativebioinformatics/RNAmining"))
-9.  Gather all data from previous steps and generate informative and re-usable metadata `.csv` and `GTF` files for both novel and annotated transcripts ([tidyverse](https://tidyverse.org/), [rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html), [GenomicRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html), and [biomaRt](https://bioconductor.org/packages/release/bioc/html/biomaRt.html))
-10. Provide a report and data visualization for the full transcriptome, with emphasis on lncRNAs ([Quarto](https://quarto.org/), [tidyverse](https://tidyverse.org/), [cowplot](https://cran.r-project.org/web/packages/cowplot/index.html), [scales](https://cran.r-project.org/web/packages/scales/index.html), etc)
-11. Gather all possible QC information from the previous steps ([MultiQC](https://github.com/MultiQC/MultiQC "MultiQC"))
+2.  Recover read orientation, for ONT cDNA that is not already oriented ([Restrander](https://github.com/mritchielab/restrander "mritchielab/restrander"))
+3.  Filtering and trimming ([chopper](https://github.com/wdecoster/chopper "wdecoster/chopper"))
+4.  Mapping to a genome reference ([minimap2](https://github.com/lh3/minimap2 "lh3/minimap2") and [samtools](https://github.com/samtools/samtools "samtools"))
+5.  Quality control of mapped reads ([NanoComp](https://github.com/wdecoster/nanocomp "wdecoster/nanocomp"))
+6.  Per-base coverage tracks as `bigWig`, one per sample ([rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html) and [GenomicAlignments](https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html))
+7.  Transcriptome Assembly ([Bambu](https://www.bioconductor.org/packages/release/bioc/html/bambu.html))
+8.  Compare novel transcripts to the annotation reference ([GffCompare](https://github.com/gpertea/gffcompare "gpertea/gffcompare"))
+9.  Convert novel transcripts `GTF` file to `FASTA` ([GffRead](https://github.com/gpertea/gffread "gpertea/gffread"))
+10. Predict transcripts as protein-coding or non-coding ([CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone") by default, or [RNAmining](https://gitlab.com/integrativebioinformatics/RNAmining "integrativebioinformatics/RNAmining"))
+11. Gather all data from previous steps and generate informative and re-usable metadata `.csv` and `GTF` files for both novel and annotated transcripts, with biotypes read directly from the supplied reference annotation ([tidyverse](https://tidyverse.org/), [rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html), and [GenomicRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html))
+12. Restrict the count matrices and `GTF` files to the curated set, and attach biotype and classification attributes to the validated annotations
+13. Regenerate Bambu's PCA and expression heatmaps from the curated transcriptome, so the sample-level view can be read beside the one built from the raw assembly
+14. Draw genomic context figures over the coverage tracks — known genes carrying novel isoforms, and the sense-intronic candidates, which lie inside a host intron on the host's own strand and cannot be resolved from the assembly alone ([plotgardener](https://bioconductor.org/packages/release/bioc/html/plotgardener.html))
+15. Provide a report and data visualization for the full transcriptome, with emphasis on lncRNAs ([Quarto](https://quarto.org/), [tidyverse](https://tidyverse.org/), [cowplot](https://cran.r-project.org/web/packages/cowplot/index.html), [scales](https://cran.r-project.org/web/packages/scales/index.html), etc)
+16. Gather all possible QC information from the previous steps ([MultiQC](https://github.com/MultiQC/MultiQC "MultiQC"))
+
+**What you get**
+
+| Path | |
+|---|---|
+| `transcriptome_report/report.html` | The self-contained report, every figure embedded |
+| `bambu_validated/` | Curated count matrices, annotations and the curation yield |
+| `novel_transcripts/`, `ref_transcripts/` | Metadata `.csv` and `GTF` per category |
+| `genomic_context/` | Coverage and transcript models drawn at selected loci |
+| `coverage/*.bw` | Per-sample coverage as bigWig — two to three orders of magnitude smaller than the alignments, so this is the form of the data meant to leave the cluster. Load them in IGV to explore any region beyond the windows the pipeline chose to draw |
 
 ## Usage
 
-pulposeq is compatible with Ensembl or GENCODE reference genomes and annotations, and protein-coding potential prediction with [RNAmining](https://gitlab.com/integrativebioinformatics/RNAmining "integrativebioinformatics/RNAmining") only supports the following list of organisms:
-> *Homo sapiens, Mus musculus, Danio rerio, Anolis carolinensis*, *Chrysemys picta belli, Eptatetrus burgeri, Gallus gallus, Latimeria chalumnae, Monodelphis domestica, Notechis scutatus, Ornithorhynchus anatinus*, *Petromyzon marinus, Sphenodon punctatus,* and *Xenopus tropicalis.*
+pulposeq is compatible with **Ensembl or GENCODE** reference genomes and annotations. Transcript and gene biotypes are read directly from the annotation you supply, so no Ensembl release or BioMart dataset needs to be declared.
 
-**In the next releases, we plan to update the pipeline workflow to cover more organisms or even more general taxonomic classes.**
+Coding potential is predicted with [CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone") by default, which is organism-agnostic — so **the pipeline is no longer restricted to a fixed species list**. Any eukaryote with an Ensembl or GENCODE annotation is in scope; splice-aware alignment and the intron-based gffcompare class codes are what make the eukaryotic assumption, not the predictor.
+
+[RNAmining](https://gitlab.com/integrativebioinformatics/RNAmining "integrativebioinformatics/RNAmining") remains selectable with `coding_potential_pred: "rnamining"`, and then requires an `organism` from its supported list:
+
+> *Homo sapiens, Mus musculus, Danio rerio, Anolis carolinensis, Chrysemys picta bellii, Crocodylus porosus, Eptatretus burgeri, Gallus gallus, Latimeria chalumnae, Monodelphis domestica, Notechis scutatus, Ornithorhynchus anatinus, Petromyzon marinus, Rattus norvegicus, Sphenodon punctatus,* and *Xenopus tropicalis.*
 
 > [!WARNING]
-> pulposeq is transitioning to the current strict syntax (version 26.04). Make sure to setup appropriate configuration. See the current documentation at [Seqera Docs](https://docs.seqera.io/nextflow/strict-syntax).
+> RNAmining is currently under review and is **not recommended**. On this pipeline's test data it classified 86 of 100 GENCODE protein-coding transcripts as non-coding, where CPC2 misclassified 1. It is kept selectable so earlier runs can be reproduced and the cause investigated. See [Coding potential](docs/usage.md#coding-potential).
+
+> [!WARNING]
+> pulposeq requires Nextflow `>=26.04.0`, where the strict syntax parser is enabled by default. Make sure to setup appropriate configuration. See the current documentation at [Seqera Docs](https://docs.seqera.io/nextflow/strict-syntax).
 
 ### Nextflow setup and testing the pipeline
 
@@ -76,6 +97,8 @@ nextflow run main.nf -profile test,[container runtime] -params-file test_data/te
 
 Set the container runtime profile to `docker`, `singularity` or `apptainer`, according to your resources. pulposeq does **NOT** support nor recommend execution with `conda` environments for the local modules.
 
+The `test` profile is calibrated to the bundled chromosome 1 data and peaks at roughly 24 GB, so it runs on a workstation. For real datasets use `medium` or `large`, and see [Resource requests](docs/usage.md#resource-requests) for measured requirements at each scale -- Bambu in particular can need several hundred GB.
+
 In some cases, depending on your system's permissions and configuration regarding containers, you might need to set specific configurations before running. In that case, follow the instructions available at [Seqera Docs](https://docs.seqera.io/nextflow/reference/config).
 
 > *As long as you use the supported container runtimes and do not modify the pipeline architecture, pulposeq ensures ***reproducibility*** independently of your system's specific setup.*
@@ -83,11 +106,26 @@ In some cases, depending on your system's permissions and configuration regardin
 > [!WARNING]
 > Please provide pipeline parameters via the CLI or input a `yaml` or `json`parameters file  via the Nextflow `-params-file` option (most recommended). Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration, ***except for parameters***; see [docs](https://nf-co.re/usage/configuration#custom-configuration-files).
 
+You must declare your sequencing library chemistry with the `library` (`ONT_cDNA`, `ONT_DRS` or `PacBio`) and `stranded_library` (`true`/`false`) parameters. These set the `minimap2` alignment preset and Bambu's strandedness together, and a single execution must use one library type. PacBio libraries are expected to have been processed and stranded beforehand by PacBio's own standard workflows, and ONT direct RNA is oriented by construction.
 
-pulposeq is configured in the copy mode for publishing the output directories, creating file replicas of your final results originally created at the `work/` directory. If pulposeq presents any errors, this configuration allows you to restart the pipeline execution from the last successfull step by using the `-resume` parameter. The `work/` directory not only contains your results, but all other intermediate execution files (e.g. temporary files, `.command.sh` and `.command.log`). After running the pipeline, remember that this setup allows you to safely delete the pipeline's `work/` directory without losing your published results.
+Unoriented ONT cDNA (`library: "ONT_cDNA"` with `stranded_library: false`) is re-oriented **inside** the pipeline by Restrander, which then requires a `restrand_kit` matching your chemistry — there is no default, since the wrong preset yields a low orientation rate rather than an error. See [Library type and strandedness](docs/usage.md#library-type-and-strandedness) and [Restranding ONT cDNA libraries](docs/usage.md#restranding-ont-cdna-libraries) for the full details.
 
-> [!TIP]
-> Copying large datasets can significantly take a long time to complete or occupy a large amount of disk space. If you require other setup to optimize resource usage, follow the instructions from the [Nextflow documentation](https://docs.seqera.io/nextflow/reference/process#publishdir) to change the `publishDir` setting in the [`nextflow.config`](nextflow.config) file.
+
+pulposeq publishes results in `symlink` mode by default. Every file in your output directory is a symbolic link pointing at the real file inside `work/`, rather than a copy of it. This costs no additional disk space and completes instantly, which matters when the outputs are large `BAM` and `GTF` files.
+
+The `work/` directory holds your actual results alongside every intermediate execution file (temporary files, `.command.sh`, `.command.log`). It is also what makes `-resume` able to restart from the last successful step if a run fails.
+
+> [!WARNING]
+> With `symlink` publishing, **deleting `work/` destroys your results** — the links in the output directory are left pointing at files that no longer exist. Before removing `work/`, or before archiving or sharing an output directory, either dereference the links or re-run with `--publish_dir_mode copy`.
+>
+> To copy rather than link, either pass `--publish_dir_mode copy` on the command line, set `publish_dir_mode: copy` in your params file, or change the default in [`nextflow.config`](nextflow.config). Bear in mind that copying large datasets takes noticeably longer and doubles the disk they occupy. The available modes are documented in the [Nextflow documentation](https://docs.seqera.io/nextflow/reference/process#publishdir).
+>
+> To turn an existing symlinked output directory into real files, dereference it into a new location:
+>
+> ``` bash
+> cp -rL results results_standalone
+> ```
+
 
 ## Citations
 

@@ -1,39 +1,160 @@
-# input your full path to the samplesheet.csv file and the output directory where you want the results to be saved
+# ==============================================================================
+#  pulposeq run configuration
+#  Copy this file, edit the paths and settings below, then run with:
+#      nextflow run integrativebioinformatics/pulposeq -profile <docker|singularity|apptainer> -params-file <this file>
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+#  Input and output
+# ------------------------------------------------------------------------------
+# Full paths to the samplesheet and the directory where results should be written
 input: "/your/path/to/samplesheet.csv"
 outdir: "/your/path/to/results"
 
-# set the following parameters to true if you want to skip the corresponding steps, otherwise set them to false
-skip_qc: false
-skip_filtering: false
-skip_alignment: false
-skip_alignment_qc: false
-skip_class: false
+# ------------------------------------------------------------------------------
+#  Steps to skip
+# ------------------------------------------------------------------------------
+# Set to true to skip the corresponding stage, false to run it. Each of the three
+# stage skips also skips everything downstream of it, since every later stage
+# consumes the output of the one before.
+skip_chopper: false       # filtering and trimming; every NanoComp report still runs
+skip_minimap2: false      # alignment, and with it bambu, classification and the report
+skip_bambu: false         # transcriptome assembly, and with it classification and the report
+skip_class: false         # coding-potential prediction and novel transcript classification
 
-# set the following QC and filtering parameters 
+# NanoComp reports to skip, comma-separated: raw, restrander, chopper, minimap2, or
+# all. Leave unset (null) to run every report. This selects reports only -- chopper
+# still filters and Restrander still orients with their reports turned off.
+# Examples: 'minimap2'  |  'raw,chopper'  |  'rest,chopper'  |  'all'
+skip_nanocomp: null
+
+# ------------------------------------------------------------------------------
+#  Sequencing library
+# ------------------------------------------------------------------------------
+# ONT_cDNA (PCR-cDNA or direct cDNA), ONT_DRS (direct RNA-seq), or PacBio
+library: "ONT_cDNA"
+
+# Whether the reads ON DISK are already oriented, i.e. whether read strand matches
+# RNA strand. This describes the FASTQ, not the chemistry: ONT PCR-cDNA chemistry
+# is strand-specific, but its basecalled reads are NOT oriented, because the
+# protocol sequences either cDNA strand at random.
+#
+# Automatically true for ONT_DRS and PacBio. For ONT_cDNA, leave this false unless
+# you have already re-oriented the reads yourself.
+stranded_library: false
+
+# minimap2 spliced preset. splice:hq is `splice` with -C5 -O6,24 -B4: it lowers the
+# penalty for non-canonical junctions, makes short indels costlier and long gaps
+# cheaper, and doubles the mismatch penalty. In short it trusts the read, treating a
+# discrepancy as real biology rather than basecalling error — which suits accurate
+# data and misfires on noisy data, where it can build junctions out of errors.
+#
+# Leave null to follow the library: splice:hq for PacBio (minimap2's documented
+# Iso-Seq preset), splice for ONT cDNA.
+#
+#   true   use splice:hq. Worth evaluating for R10.4.1 sup ONT cDNA, which is far
+#          more accurate than the chemistry `splice` was tuned for.
+#   false  use splice. For PacBio this overrides the recommended preset; the main
+#          reason to do it is aligning both platforms identically so the preset is
+#          not a confound when comparing their novel transcript calls.
+#
+# Not valid for ONT_DRS: that preset sets -k14 for a high error rate, which
+# contradicts what splice:hq assumes. Setting it there is an error, not ignored.
+#
+# Changing this re-runs alignment and everything after it. Do not change it in the
+# same run as a restranding change — both move the mono-exonic novel transcript
+# count, in opposite directions.
+map_hq: null
+
+# ------------------------------------------------------------------------------
+#  Restranding (unoriented ONT cDNA only)
+# ------------------------------------------------------------------------------
+# Applies only when library is ONT_cDNA and stranded_library is false. Every other
+# combination ignores this section entirely.
+#
+# Restrander orients reads using polyA/polyT tails and the protocol's primers, which
+# unlike minimap2's splice-signal inference also works on unspliced reads and on
+# non-canonical junctions.
+#
+# The pipeline has no unstranded path. Unoriented reads erase mono-exonic novel
+# transcripts, push novel isoforms of known genes into the antisense class, and bleed
+# reads between overlapping sense/antisense pairs. So ONT cDNA is either already
+# oriented (stranded_library: true) or oriented here -- and if restranding does not
+# reach restrand_min_frac on every sample, the run stops rather than continuing
+# without strand.
+
+# REQUIRED when restranding is active. The presets differ in their TSO/RTP primer
+# sequences, so the wrong one produces a low orientation rate rather than an error.
+#   PCB109, PCB111, PCB114   PCR-cDNA barcoding kits
+#   DCS109, DCS-LSK114       direct cDNA sequencing kits
+#   NEBNext                  NEBNext single-cell / low-input cDNA
+#   trimmed                  reads whose primers were already removed
+#
+# If reads were demultiplexed outside the pipeline, check whether that step also
+# trimmed the primers. If it did, the kit presets cannot find them and you want
+# "trimmed", which orients on polyA/polyT alone. Confirm with, for PCB109:
+#   zcat sample.fastq.gz | head -40000 | awk 'NR%4==2' \
+#     | grep -cE "TTTCTGTTGGTGCTGATATTGCTGGG|CCCAGCAATATCAGCACCAACAGAAA"
+# A few thousand hits means the primers survived; near zero means use "trimmed".
+restrand_kit: "PCB111"
+
+# Optional. A custom Restrander config JSON for a protocol none of the presets cover.
+# Overrides restrand_kit when set. See assets/restrander/ for a template and a field
+# reference.
+restrand_config: null
+
+# Minimum fraction of reads that must be oriented, checked per sample. Any sample
+# below this stops the run. Restrander reaches ~0.99 on matched PCR-cDNA data, so a
+# failure almost always means the kit or the trimming state is wrong rather than that
+# the threshold needs relaxing. Note that "trimmed" orients on polyA/polyT alone and
+# so reaches a lower fraction than a primer-based preset. Minimum 0.5.
+restrand_min_frac: 0.80
+
+# ------------------------------------------------------------------------------
+#  QC and filtering
+# ------------------------------------------------------------------------------
 minqual: 0
-minlen: 300 # default value
+minlen: 300          # default
+maxlen: null         # optional upper read length limit, e.g. 10000
 maxgc: 1
 mingc: 0
+
+# Keep both at 0 when restranding is active. Restrander locates primers and polyA/T
+# tails at exactly the positions these crop, and it runs before chopper, so cropping
+# does not break it -- but primer removal is Restrander's job, not chopper's.
 headcrop: 0
 tailcrop: 0
 
-# set the full path to your genome and annotation reference files
-# recommendation: always use the latest ensembl release version available
+# ------------------------------------------------------------------------------
+#  Reference files
+# ------------------------------------------------------------------------------
+# Only Ensembl and GENCODE annotations are supported. Transcript metadata is read
+# directly from the annotation GTF, so no Ensembl release or BioMart dataset needs
+# to be declared.
 reference: "/your/path/to/references/dna.primary_assembly.fa"
-annotation: "/your/path/to/references/ensembl_annotation.release.chr.gtf" 
+annotation: "/your/path/to/references/ensembl_annotation.release.chr.gtf"
 
-# set the NDR threshold for Bambu (optional, default is NULL for autoadjustment)
-ndr: null # e.g. 0.2
+# ------------------------------------------------------------------------------
+#  Transcript discovery
+# ------------------------------------------------------------------------------
+# Novel discovery rate threshold for Bambu. Leave null to let Bambu choose one from
+# the data; the value it selects is recorded in results/bambu/bambu_run_metrics.csv.
+# Pin it when comparing runs, since a shifting NDR makes before/after comparisons
+# meaningless.
+ndr: null            # e.g. 0.2
 
-# set organism scientific name for ncRNA prediction by RNAmining (check the list of available organisms)
-organism: "Genus_species" # e.g. "Mus_musculus"
+# ------------------------------------------------------------------------------
+#  Coding potential prediction
+# ------------------------------------------------------------------------------
+# Which tool decides whether a novel transcript is coding or non-coding. That call
+# is the routing key for the novel lncRNA and novel protein-coding categories, so it
+# determines what the pipeline's main output contains.
+#
+#   cpc2       default. No organism needed.
+#   rnamining  requires `organism` below. 
+coding_potential_pred: "cpc2"
 
-# set reference ensembl dataset
-# the scientific name is entirely in lowercase and must follow an abbreviation pattern:
-# the first letter of the genus name followed by the full species name, then "_gene_ensembl"
-ensembl_organism_dataset: "organism_gene_ensembl" # e.g. "mmusculus_gene_ensembl"
-
-# set ensembl release version number according to your reference files
-# If using GENCODE, check version compatibility (e.g. GENCODE GRCh38 v48 corresponds to Ensembl release 114)
-# In practical terms, the GENCODE annotation is essentially identical to the Ensembl annotation.
-ensembl_version: 114
+# Scientific name of the organism, e.g. "Mus_musculus". Only used by RNAmining,
+# which selects a per-organism model and has no usable default -- the run stops if
+# you choose rnamining without it. Ignored by CPC2, which warns and continues.
+organism: null

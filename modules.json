@@ -12,6 +12,13 @@
                             "modules"
                         ]
                     },
+                    "cpc2": {
+                        "branch": "master",
+                        "git_sha": "4ed18339abcf50b8fd841f63606a0fc0cf2cf1e2",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
                     "gffcompare": {
                         "branch": "master",
                         "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",

@@ -1,10 +1,9 @@
 process BAMBU {
-    tag "Running Bambu"
-    label 'process_high_memory'
+    label 'process_bambu'
 
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
-        'docker://itsiaguara/longnoncoder:test3':
-        'docker.io/itsiaguara/longnoncoder:test3' }"
+        'docker://itsiaguara/pulposeq:test':
+        'docker.io/itsiaguara/pulposeq:test' }"
 
     input:
     val bam_list
@@ -25,14 +24,18 @@ process BAMBU {
     path "BambuOutput_uniqueCounts_transcript.txt"       , emit: unique_counts
     path "bambu_novel_transcripts.gtf"                   , emit: gtf_new_transcripts
     path "BambuOutput_extended_annotations.gtf"          , emit: gtf_all_transcripts
+    path "se_multiSample.rds"                            , emit: rds_transcript
+    path "seGene_multiSample.rds"                        , emit: rds_gene
     path "*.rds"                                         , emit: rds
+    path "bambu_console.log"     , emit: console_log
+    path "bambu_run_metrics.csv" , emit: metrics
     path "versions.yml"                                  , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args     = task.ext.args ? task.ext.args : "--ndr ${params.ndr}"
+    def args = task.ext.args ?: ''
     """
     bambu.R \\
         -g $reference \\
@@ -41,8 +44,18 @@ process BAMBU {
         -n $task.cpus \\
         -s $sample_info \\
         -o . \\
-        $args
+        $args 2>&1 | tee bambu_console.log
 
+    # Bambu selects the novel discovery rate itself unless --ndr is given, and reports
+    # it only on stdout, so it is parsed back out here rather than lost with the work
+    # directory. sed -n ...p rather than grep: it exits 0 when nothing matches, which
+    # matters under `set -e`.
+    ndr=\$(sed -n 's/.*novel discovery rate (NDR) of: \\([0-9.][0-9.]*\\).*/\\1/p' bambu_console.log | tail -1)
+    printf 'metric,value\\n'                                >  bambu_run_metrics.csv
+    printf 'ndr_used,%s\\n' "\${ndr:-NA}"                    >> bambu_run_metrics.csv
+    printf 'ndr_requested,%s\\n' "${params.ndr ?: 'auto'}"   >> bambu_run_metrics.csv
+    printf 'library,%s\\n' "${params.library}"               >> bambu_run_metrics.csv
+    printf 'stranded_declared,%s\\n' "${params.stranded_library}" >> bambu_run_metrics.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -60,7 +73,6 @@ process BAMBU {
     """
 
     stub:
-    // REMOVED the unused 'def args' line from here
     """
     touch heatmap_gene.png
     touch heatmap_transcript.png
@@ -73,7 +85,10 @@ process BAMBU {
     touch BambuOutput_uniqueCounts_transcript.txt
     touch bambu_novel_transcripts.gtf
     touch BambuOutput_extended_annotations.gtf
-    touch bambu_output.rds
+    touch se_multiSample.rds
+    touch seGene_multiSample.rds
+    touch bambu_console.log
+    printf 'metric,value\\nndr_used,0.100\\nndr_requested,auto\\n' > bambu_run_metrics.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

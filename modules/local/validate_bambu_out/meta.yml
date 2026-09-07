@@ -1,0 +1,85 @@
+name: "validate_bambu_outputs"
+description: Regenerate Bambu's PCA and expression heatmaps from the curated transcriptome, and record the curation yield as a table.
+keywords:
+  - bambu
+  - pca
+  - heatmap
+  - quantification
+  - curation
+tools:
+  - r:
+      description: R statistical computing environment.
+      homepage: https://www.r-project.org/
+      licence: ["GPL-2.0-or-later"]
+  - bambu:
+      description: Context-aware transcript quantification from long-read RNA-seq data.
+      homepage: https://bioconductor.org/packages/bambu/
+      licence: ["GPL-3.0-or-later"]
+  - summarizedexperiment:
+      description: Container for matrix-like assay data with row and column annotations.
+      homepage: https://bioconductor.org/packages/SummarizedExperiment/
+      licence: ["Artistic-2.0"]
+
+input:
+  - se_rds:
+      type: file
+      description: Transcript-level SummarizedExperiment from Bambu.
+      pattern: "se_multiSample.rds"
+  - se_gene_rds:
+      type: file
+      description: Gene-level SummarizedExperiment from Bambu.
+      pattern: "seGene_multiSample.rds"
+  - counts_transcript_validated:
+      type: file
+      description: Validated transcript counts; column one supplies the transcript IDs to keep.
+      pattern: "*.txt"
+  - counts_gene_validated:
+      type: file
+      description: Validated gene counts; column one supplies the gene IDs to keep.
+      pattern: "*.txt"
+  - r_script:
+      type: file
+      description: The validate_bambu_out.R script staged from `bin/`.
+      pattern: "validate_bambu_out.R"
+
+output:
+  - pca:
+      type: file
+      description: PCA over the curated transcriptome.
+      pattern: "pca_validated.png"
+  - pca_grouped:
+      type: file
+      description: PCA over the curated transcriptome, coloured by group.
+      pattern: "pca_grouped_validated.png"
+  - h_gene:
+      type: file
+      description: Gene-level expression heatmap over the curated set.
+      pattern: "heatmap_gene_validated.png"
+  - h_transcript:
+      type: file
+      description: Transcript-level expression heatmap over the curated set.
+      pattern: "heatmap_transcript_validated.png"
+  - rds_transcript:
+      type: file
+      description: Transcript-level SummarizedExperiment subset to the curated features.
+      pattern: "se_multiSample_validated.rds"
+  - rds_gene:
+      type: file
+      description: Gene-level SummarizedExperiment subset to the curated features.
+      pattern: "seGene_multiSample_validated.rds"
+  - validation_summary:
+      type: file
+      description: >-
+        The curation yield, one row per feature type, with columns feature_type,
+        curated_set, total_quantified, extended_annotations and recovery. Recovery is
+        measured against the expressed features rather than against the extended
+        annotation, so features Bambu quantified but no read supports are not counted
+        as losses.
+      pattern: "validation_summary.csv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"

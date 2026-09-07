@@ -141,22 +141,200 @@ workflow PIPELINE_COMPLETION {
 */
 
 //
+// Stages whose NanoComp report --skip_nanocomp turns off.
+//
+// One parameter rather than one boolean per stage: the four reports are the same
+// tool run at four points of the same pipeline, and what a run actually decides is
+// where read-level QC is worth its runtime. Returns the set of stage names to skip,
+// so call sites read as `if (!('raw' in nanocompSkips()))`.
+//
+// 'all' expands to every stage. Tokens may be separated by commas or whitespace,
+// and 'rest' is accepted for 'restrander' because it is how the stage is usually
+// spoken about and reads evenly next to 'raw' and 'chopper'.
+//
+def nanocompSkips() {
+    def stages = ['raw', 'restrander', 'chopper', 'minimap2']
+
+    def requested = nanocompSkipTokens()
+        .collect { token -> token == 'rest' ? 'restrander' : token }
+        .unique()
+
+    def unknown = requested - (stages + 'all')
+    if (unknown) {
+        error(
+            "--skip_nanocomp does not recognise ${unknown.collect { token -> "'${token}'" }.join(', ')}. " +
+            "Valid values are ${stages.join(', ')} and all, alone or comma-separated " +
+            "(for example --skip_nanocomp 'raw,chopper'). Leave it unset to run every report."
+        )
+    }
+
+    return (requested.contains('all') ? stages : requested) as Set
+}
+
+//
+// The raw tokens as the user wrote them, before 'all' is expanded. Only useful for
+// telling "they asked for this stage by name" from "they asked for everything".
+//
+def nanocompSkipTokens() {
+    return params.skip_nanocomp
+        ?.toString()
+        ?.toLowerCase()
+        ?.tokenize(', \t')
+        ?.findAll { token -> token } ?: []
+}
+
+//
+// Whether Restrander runs: ONT cDNA that the user has not declared oriented.
+//
+def restrandingActive() {
+    return params.library == 'ONT_cDNA' &&
+           params.stranded_library?.toString()?.toLowerCase() != 'true'
+}
+
+//
 // Check and validate pipeline parameters
 //
 def validateInputParameters() {
-    // Alignment requires reference genome and annotation
-    if (!params.skip_alignment) {
-        if (!params.reference) {
-            error("--reference must be provided when alignment is not skipped (skip_alignment = false)")
-        }
-        if (!params.annotation) {
-            error("--annotation must be provided when alignment is not skipped (skip_alignment = false)")
-        }
+    // NanoComp report selection. Parsed here as well as at the call sites so a typo
+    // fails at startup rather than hours in, where the only symptom would be a
+    // report quietly missing from the MultiQC page.
+    nanocompSkips()
+
+    if (nanocompSkipTokens().any { token -> token in ['rest', 'restrander'] } && !restrandingActive()) {
+        def why = params.library == 'ONT_cDNA'
+            ? "--stranded_library is true, so these reads are already oriented"
+            : "--library ${params.library} is always oriented"
+
+        log.warn(
+            "--skip_nanocomp names the restrander report, but restranding is not running: ${why}. " +
+            "That report only exists for ONT_cDNA reads the pipeline has to orient itself, so the " +
+            "token has no effect."
+        )
     }
 
-    // Coding prediction requires organism
-    if (!params.skip_class && !params.organism) {
-        error("--organism must be provided when classification is not skipped (skip_class = false)")
+    // Alignment requires reference genome and annotation
+    if (!params.skip_minimap2) {
+        if (!params.reference) {
+            error("--reference must be provided when alignment is not skipped (skip_minimap2 = false)")
+        }
+        if (!params.annotation) {
+            error("--annotation must be provided when alignment is not skipped (skip_minimap2 = false)")
+        }
+
+        // Library type drives the minimap2 preset and Bambu strandedness
+        def valid_libraries = ['ONT_cDNA', 'ONT_DRS', 'PacBio']
+        if (!params.library) {
+            error("--library must be provided when alignment is not skipped (skip_minimap2 = false). Valid values: ${valid_libraries.join(', ')}")
+        }
+        if (!(params.library in valid_libraries)) {
+            error("--library '${params.library}' is not valid. Valid values: ${valid_libraries.join(', ')}")
+        }
+        if (params.library in ['ONT_DRS', 'PacBio'] && params.stranded_library?.toString()?.toLowerCase() != 'true') {
+            log.warn("--library ${params.library} is always stranded; --stranded_library false will be ignored.")
+        }
+
+        // Coding potential predictor. RNAmining carries a per-organism model and needs
+        // to be told which, where CPC2 does not.
+        def valid_predictors = ['cpc2', 'rnamining']
+        if (!(params.coding_potential_pred in valid_predictors)) {
+            error("--coding_potential_pred '${params.coding_potential_pred}' is not valid. Valid values: ${valid_predictors.join(', ')}")
+        }
+        if (params.coding_potential_pred == 'rnamining' && !params.organism) {
+            error(
+                "--organism must be provided when --coding_potential_pred rnamining. " +
+                "RNAmining selects a per-organism model and has no usable default.\n" +
+                "Supply --organism, or use the default --coding_potential_pred cpc2, which needs none."
+            )
+        }
+        if (params.coding_potential_pred == 'cpc2' && params.organism) {
+            log.warn("--organism is only used by RNAmining and will be ignored with --coding_potential_pred cpc2.")
+        }
+
+        // splice:hq is `splice` with -C5 -O6,24 -B4: it trusts the read, treating a
+        // discrepancy as real biology rather than basecalling error. -k14 exists for
+        // the opposite reason, so the two cannot both be right about the same data.
+        if (params.map_hq != null && params.library == 'ONT_DRS') {
+            error(
+                "--map_hq cannot be used with --library ONT_DRS. splice:hq assumes a low error " +
+                "rate, while the ONT_DRS preset sets -k14 to cope with a high one, so the two " +
+                "cannot both be right about the same reads.\n" +
+                "Drop --map_hq, or use --library ONT_cDNA if these are cDNA reads."
+            )
+        }
+        // Left unset, the preset follows the library. Say which was chosen, since it
+        // changes junction placement and therefore the novel transcript calls, and a
+        // reader of the log should not have to infer it from the library type.
+        if (params.map_hq == null) {
+            log.info("--map_hq unset: using minimap2 " +
+                     (params.library == 'PacBio' ? 'splice:hq' : 'splice') +
+                     " for --library ${params.library}.")
+        }
+        else if (params.map_hq && params.library == 'PacBio') {
+            log.info("--map_hq true for --library PacBio matches the default preset; no change.")
+        }
+        else if (!params.map_hq && params.library == 'PacBio') {
+            log.warn("--map_hq false overrides PacBio's default splice:hq preset with plain splice. " +
+                     "splice:hq is minimap2's documented preset for Iso-Seq reads.")
+        }
+
+        // Restranding applies only to ONT cDNA that is not already oriented. The
+        // pipeline admits no unstranded path: losing strand erases mono-exonic novel
+        // transcripts, depletes novel isoforms of known genes into the antisense
+        // class, and bleeds reads between overlapping sense/antisense pairs. Such
+        // reads are either oriented before they arrive or oriented here.
+        def restrand_active = restrandingActive()
+
+        if (restrand_active) {
+            // The kit is deliberately not defaulted: the presets differ in their
+            // TSO/RTP primer sequences, and the wrong one yields a low orientation
+            // rate rather than an error.
+            if (!params.restrand_kit && !params.restrand_config) {
+                def kits = ['PCB109', 'PCB111', 'PCB114', 'DCS109', 'DCS-LSK114', 'NEBNext', 'trimmed']
+                error(
+                    "--restrand_kit must be provided for unoriented ONT_cDNA libraries. Valid values: ${kits.join(', ')}.\n" +
+                    "Alternatively pass --restrand_config with a custom Restrander JSON.\n" +
+                    "If the reads were already oriented outside the pipeline, set --stranded_library true instead."
+                )
+            }
+
+            // A floor, not just a range check. Without one, --restrand_min_frac 0
+            // would wave through reads Restrander could not orient while minimap2
+            // and Bambu are both told the data is stranded -- worse than the
+            // unstranded path this replaced, because it fails silently.
+            def frac = params.restrand_min_frac as double
+            if (frac < 0.5 || frac > 1) {
+                error(
+                    "--restrand_min_frac must be between 0.5 and 1, got ${params.restrand_min_frac}. " +
+                    "Reads that Restrander could not orient must not reach an alignment and a quantification " +
+                    "step that assume strand is known, so this threshold cannot be disabled."
+                )
+            }
+            if (frac < 0.75) {
+                log.warn "--restrand_min_frac is set to ${params.restrand_min_frac}. Restrander reaches ~0.99 on " +
+                         "matched PCR-cDNA data, so a threshold this low usually means the kit or the trimming " +
+                         "state is wrong rather than that the threshold needs relaxing."
+            }
+        }
+        else if (params.restrand_kit || params.restrand_config) {
+            // Reached only when one of these was actually passed: both default to
+            // null, so their presence here means they were set for a library that
+            // skips restranding. Warned about rather than quietly dropped -- the run
+            // record should reflect what was asked for, and hiding the value would
+            // leave the misunderstanding invisible.
+            //
+            // restrand_min_frac is deliberately not covered: it defaults to 0.8, so
+            // there is no way to tell a user who passed 0.8 from one who passed
+            // nothing at all.
+            def why = params.library == 'ONT_cDNA'
+                ? "--stranded_library is true, so these reads are already oriented"
+                : "--library ${params.library} is always oriented"
+
+            log.warn(
+                "restrand_kit / restrand_config are set, but restranding is neither running nor applied: " +
+                "${why}. Restranding runs only for ONT_cDNA reads that are not already oriented, so these " +
+                "values are ignored."
+            )
+        }
     }
 
     // Filtering length checks

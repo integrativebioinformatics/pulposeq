@@ -1,13 +1,13 @@
 process RNAMINING {
-    tag 'Predicting_Coding_Potential'
+    tag 'Coding potential prediction'
     label 'process_low'
 
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/rnamining:1.0.4--pyhdfd78af_0':
-        'biocontainers/rnamining:1.0.4--pyhdfd78af_0' }"
+        'docker://samuelismael/rnamining:1.1.0-nextflow':
+        'docker.io/samuelismael/rnamining:1.1.0-nextflow' }"
 
     input:
-    val fasta
+    path fasta
 
     output:
     path 'codings.txt'        , emit: coding
@@ -28,7 +28,7 @@ process RNAMINING {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        rnamining: \$(echo "v1.0.4")
+        rnamining: \$(rnamining --version 2>&1 | sed 's/^rnamining[[:space:]]*//')
     END_VERSIONS
     """
 
@@ -36,10 +36,16 @@ process RNAMINING {
     """
     touch codings.txt
     touch noncodings.txt
-    touch predictions.txt
+    cat <<-END_PREDICTIONS > predictions.txt
+    # RNAmining predictions
+    # ID	prediction	score
+    # RNAmining 1.1.0
+    # FASTA transcript predictions
+    transcript_stub	coding	0.5
+    END_PREDICTIONS
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        rnamining: \$(echo "v1.0.4")
+        rnamining: 1.1.0
     END_VERSIONS
     """
 }

@@ -51,9 +51,9 @@
                 },
                 "publish_dir_mode": {
                     "type": "string",
-                    "default": "copy",
+                    "default": "symlink",
                     "description": "Method used to save pipeline results to output directory.",
-                    "help_text": "The Nextflow `publishDir` option specifies which intermediate files should be saved to the output directory. This option tells the pipeline what method should be used to move these files. See [Nextflow docs](https://www.nextflow.io/docs/latest/process.html#publishdir) for details.",
+                    "help_text": "The Nextflow `publishDir` option specifies which intermediate files should be saved to the output directory. This option tells the pipeline what method should be used to move these files. The default `symlink` links results into `work/` rather than copying them, which uses no extra disk but means deleting `work/` destroys the published results. Use `copy` for an output directory that stands on its own. See [Nextflow docs](https://www.nextflow.io/docs/latest/process.html#publishdir) for details.",
                     "fa_icon": "fas fa-copy",
                     "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"],
                     "hidden": true
@@ -127,11 +127,15 @@
         }
     ],
     "properties": {
-        "skip_qc": {
-            "type": "boolean"
+        "skip_nanocomp": {
+            "type": "string",
+            "pattern": "^\\s*(raw|rest|restrander|chopper|minimap2|all)(\\s*[,\\s]\\s*(raw|rest|restrander|chopper|minimap2|all))*\\s*$",
+            "description": "NanoComp reports to skip: raw, restrander, chopper, minimap2, or all. Comma-separated for more than one, e.g. 'raw,chopper'. Unset runs every report.",
+            "help_text": "Selects reports only, never the tools they describe: chopper still filters and Restrander still orients with their reports turned off. The restrander report exists only for ONT_cDNA libraries the pipeline has to orient itself."
         },
-        "skip_filtering": {
-            "type": "boolean"
+        "skip_chopper": {
+            "type": "boolean",
+            "description": "Skip filtering and trimming with chopper. Its NanoComp report goes with it; the other reports still run."
         },
         "minqual": {
             "type": "integer"
@@ -151,12 +155,55 @@
         "tailcrop": {
             "type": "number"
         },
-        "skip_alignment": {
-            "type": "boolean"
+        "skip_minimap2": {
+            "type": "boolean",
+            "description": "Skip alignment to the reference genome, and with it every stage that consumes alignments: Bambu, classification and the report."
+        },
+        "skip_bambu": {
+            "type": "boolean",
+            "description": "Skip transcriptome assembly with Bambu, and with it every stage that consumes its transcriptome: classification, metadata refinement and the report."
         },
         "reference": {
             "type": "string",
             "description": "Reference genome used for assembly"
+        },
+        "library": {
+            "type": "string",
+            "enum": ["ONT_cDNA", "ONT_DRS", "PacBio"],
+            "description": "Sequencing library type. Determines the minimap2 preset and Bambu strandedness.",
+            "help_text": "ONT_cDNA covers both PCR-cDNA and direct-cDNA protocols. ONT_DRS and PacBio are always treated as stranded."
+        },
+        "stranded_library": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether the reads on disk are already oriented. Forced to true for ONT_DRS and PacBio; only meaningful for ONT_cDNA. This describes the FASTQ, not the chemistry: ONT PCR-cDNA is strand-specific chemistry whose basecalled reads are not oriented.",
+            "fa_icon": "fas fa-arrows-alt-h"
+        },
+        "map_hq": {
+            "type": "boolean",
+            "description": "Choose minimap2's splice:hq preset over splice. splice:hq is splice with -C5 -O6,24 -B4: a lower non-canonical junction penalty, costlier short gaps, cheaper long ones and a doubled mismatch penalty. It trusts the read, reading a discrepancy as real biology rather than basecalling error, so it suits accurate data (R10.4.1 sup, Iso-Seq) and can build junctions out of errors on noisy data. Leave unset to follow the library default: splice:hq for PacBio, splice for ONT cDNA. Set true or false to override for either, so both can be run each way and compared. Cannot be used with ONT_DRS, whose -k14 setting assumes the opposite error profile.",
+            "fa_icon": "fas fa-gem"
+        },
+        "restrand_kit": {
+            "type": "string",
+            "enum": ["PCB109", "PCB111", "PCB114", "DCS109", "DCS-LSK114", "NEBNext", "trimmed"],
+            "description": "Sequencing kit whose primer configuration Restrander should use. Required when restranding is active, unless --restrand_config is given. Choosing the wrong kit gives a low orientation rate rather than an error. 'trimmed' is for reads whose primers were already removed.",
+            "fa_icon": "fas fa-vial"
+        },
+        "restrand_config": {
+            "type": "string",
+            "format": "file-path",
+            "mimetype": "application/json",
+            "description": "Optional custom Restrander config JSON, for protocols not covered by --restrand_kit. Overrides the kit preset when set.",
+            "fa_icon": "fas fa-file-code"
+        },
+        "restrand_min_frac": {
+            "type": "number",
+            "default": 0.8,
+            "minimum": 0.5,
+            "maximum": 1,
+            "description": "Minimum fraction of reads Restrander must orient, per sample. Any sample below this stops the run: there is no unstranded path, because unoriented reads reaching alignment and quantification erase mono-exonic novel transcripts and misclassify novel isoforms of known genes as antisense. Restrander reaches ~0.99 on matched PCR-cDNA data, so a failure usually means the kit or the trimming state is wrong.",
+            "fa_icon": "fas fa-percent"
         },
         "bam_format": {
             "type": "boolean"
@@ -172,27 +219,28 @@
         "cigar_bam": {
             "type": "boolean"
         },
-        "skip_alignment_qc": {
-            "type": "boolean"
-        },
         "annotation": {
             "type": "string",
             "description": "GTF file for reference genome"
         },
         "skip_class": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Skip transcriptome characterisation: classification, metadata refinement and the report. Bambu still runs."
+        },
+        "coding_potential_pred": {
+            "type": "string",
+            "default": "cpc2",
+            "enum": ["cpc2", "rnamining"],
+            "description": "Tool used to predict coding potential for novel transcripts.",
+            "help_text": "CPC2 is the default and needs no organism. RNAmining requires --organism and is currently under review: on the pipeline's test data it called 86 of 100 GENCODE protein-coding transcripts non-coding, and invalidated 80 of the 88 it had called coding."
         },
         "organism": {
-            "type": "string"
-        },
-        "ensembl_organism_dataset": {
-            "type": "string"
-        },
-        "ensembl_version": {
-            "type": "integer"
+            "type": "string",
+            "description": "Organism model used by RNAmining, e.g. Homo_sapiens. Required with --coding_potential_pred rnamining, and ignored by CPC2."
         },
         "maxlen": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Maximum read length (bp). Reads longer than this are discarded by chopper. Unset by default (no upper limit)."
         },
         "ndr": {
             "type": "number",
