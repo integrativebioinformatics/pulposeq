@@ -42,13 +42,12 @@ input:
       type: file
       description: Gene-level read counts from Bambu.
       pattern: "*.txt"
-  - se_rds:
+  - tx_classes:
       type: file
       description: >-
-        Transcript-level SummarizedExperiment from Bambu. Read for
-        txClassDescription and NDR, which exist only in this object -- the
-        extended annotation GTF does not carry them.
-      pattern: "se_multiSample.rds"
+        txClassDescription and NDR per novel transcript, written by the Bambu
+        module from the SummarizedExperiment while it is still in memory.
+      pattern: "bambu_novel_tx_classes.csv"
   - r_script:
       type: file
       description: Executable R script for novel transcripts processing.
