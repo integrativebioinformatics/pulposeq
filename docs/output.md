@@ -211,6 +211,7 @@ Only produced for ONT cDNA libraries the pipeline orients itself, and skipped by
 | `bambu_novel_transcripts.gtf` | Novel isoform candidates identified by Bambu. |
 | `bambu_run_metrics.csv` | The parameters this run actually used: `ndr_used`, `ndr_requested`, `library`, `stranded_declared`. Bambu reports its automatically chosen NDR only on stdout, so it is parsed back out here rather than lost with the work directory. The report prints it at the top. |
 | `bambu_console.log` | Bambu's full console output for the run. |
+| `bambu_novel_tx_classes.csv` | One row per novel model, with the `txClassDescription` and per-transcript `NDR` Bambu assigned it, plus `GENEID`, `novelGene`, `novelTranscript` and `readCount`. Written here because these live only on the `SummarizedExperiment`; reloading that object downstream to recover two columns would cost the whole quantification in memory. Reference transcripts, which Bambu labels `annotation`, are excluded. See [Bambu transcript classes](#bambu-transcript-classes). |
 
 ### Standard automatic plots
 
