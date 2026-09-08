@@ -81,6 +81,14 @@ output:
         type: file
         description: GTF containing novel transcripts discovered by Bambu
         pattern: "bambu_novel_transcripts.gtf"
+    - tx_classes:
+      - path: "bambu_novel_tx_classes.csv"
+        type: file
+        description: >-
+          Per-novel-transcript txClassDescription and NDR, taken from the
+          SummarizedExperiment here rather than downstream: that object carries
+          every assay matrix.
+        pattern: "bambu_novel_tx_classes.csv"
   - gtf_all_transcripts:
       - path: "BambuOutput_extended_annotations.gtf"
         type: file
