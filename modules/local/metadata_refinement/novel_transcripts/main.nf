@@ -58,7 +58,6 @@ process NOVEL_TRANSCRIPTS {
         r-dplyr: \$(Rscript -e "cat(as.character(packageVersion('dplyr')))")
         bioconductor-rtracklayer: \$(Rscript -e "cat(as.character(packageVersion('rtracklayer')))")
         bioconductor-genomicranges: \$(Rscript -e "cat(as.character(packageVersion('GenomicRanges')))")
-        bioconductor-summarizedexperiment: \$(Rscript -e "cat(as.character(packageVersion('SummarizedExperiment')))")
     END_VERSIONS
     """
 
