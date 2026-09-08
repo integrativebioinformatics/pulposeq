@@ -12,7 +12,7 @@ process NOVEL_TRANSCRIPTS {
     path coding_predictions
     path tx_counts
     path gene_counts
-    path se_rds
+    path tx_classes
     path annotation
     path r_script
     path gtf_utils
@@ -47,7 +47,7 @@ process NOVEL_TRANSCRIPTS {
         --tx_counts ${tx_counts} \\
         --gene_counts ${gene_counts} \\
         --annotation ${annotation} \\
-        --se_rds ${se_rds} \\
+        --tx_classes ${tx_classes} \\
         $args
 
     cat <<-END_VERSIONS > versions.yml
@@ -86,7 +86,6 @@ process NOVEL_TRANSCRIPTS {
         r-dplyr: \$(Rscript -e "cat(as.character(packageVersion('dplyr')))")
         bioconductor-rtracklayer: \$(Rscript -e "cat(as.character(packageVersion('rtracklayer')))")
         bioconductor-genomicranges: \$(Rscript -e "cat(as.character(packageVersion('GenomicRanges')))")
-        bioconductor-summarizedexperiment: \$(Rscript -e "cat(as.character(packageVersion('SummarizedExperiment')))")
     END_VERSIONS
     """
 }
