@@ -160,9 +160,7 @@ workflow PULPOSEQ {
             CLASSIFICATION.out.predictions,
             FILTER_BAMBU_COUNTS.out.counts_transcript_filter,
             FILTER_BAMBU_COUNTS.out.counts_gene_filter,
-            // Bambu's txClassDescription lives only in the SummarizedExperiment,
-            // so the RDS comes along to be read for it.
-            ASSEMBLY.out.rds_transcript,
+            ASSEMBLY.out.bambu_tx_classes,
             params.annotation,
             file("${projectDir}/bin/novel_transcripts.R", checkIfExists: true),
             file("${projectDir}/bin/gtf_annotation_utils.R", checkIfExists: true)
