@@ -10,6 +10,7 @@ workflow ASSEMBLY {
     ch_versions              = channel.empty()
     ch_bamlist               = channel.empty()
     ch_bambu_metrics         = channel.empty()
+    ch_bambu_tx_classes      = channel.empty()  
     ch_samp_info             = channel.empty()
     ch_reference             = channel.empty()
     ch_annotation            = channel.empty()
@@ -92,6 +93,9 @@ workflow ASSEMBLY {
     BAMBU.out.metrics
         .set { ch_bambu_metrics }
 
+    BAMBU.out.tx_classes
+        .set { ch_bambu_tx_classes }
+
     ch_versions = ch_versions.mix(BAMBU.out.versions.ifEmpty(null))
 
     emit:
@@ -114,4 +118,5 @@ workflow ASSEMBLY {
     reference           = ch_reference
     annotation          = ch_annotation
     bambu_metrics       = ch_bambu_metrics
+    bambu_tx_classes    = ch_bambu_tx_classes  
 }
