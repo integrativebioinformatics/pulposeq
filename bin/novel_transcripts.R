@@ -7,8 +7,6 @@ suppressPackageStartupMessages({
     library(rtracklayer)
     library(GenomicRanges)
     library(optparse)
-    library(SummarizedExperiment)
-
 })
 
 # Shared reference-GTF helpers, staged alongside this script by the module
@@ -30,8 +28,8 @@ option_list <- list(
                 help="Path to transcript counts file", metavar="character"),
     make_option(c("--gene_counts"), type="character", default=NULL,
                 help="Path to gene counts file", metavar="character"),
-    make_option(c("--se_rds"), type="character", default=NULL,
-                help="Transcript-level SummarizedExperiment from Bambu, for txClassDescription",
+    make_option(c("--tx_classes"), type="character", default=NULL,
+                help="bambu_novel_tx_classes.csv: txClassDescription and NDR per novel transcript",
                 metavar="character")
 )
 
@@ -212,57 +210,33 @@ tx_info$same_strand_as_ref <- ifelse(is.na(tx_info$ref_gene_strand), NA,
 # only novelty is `newLastExon` is a different claim from a `j` model that is
 # `allNew`, and the class code alone cannot separate them.
 #
-# It is carried, not re-derived: it comes out of the assembly, and there is nothing
-# downstream that could reconstruct it.
-#
 # One or more classes are packed into a colon-separated string, which is kept whole
 # here. The report splits it into sets; splitting it into columns at this point
 # would fix the vocabulary to whatever this Bambu version emits.
+#
 # BambuNDR is the novel discovery rate Bambu assigned to this transcript, not the
 # run-level threshold: a per-model score, where the run parameter is the cutoff it
 # was tested against. Carried per transcript so a candidate can be read against the
 # threshold that admitted it.
+#
+# Both come from a small CSV the Bambu module writes while the SummarizedExperiment
+# is still in memory. Reading the RDS back here would load every assay matrix to
+# recover two columns.
 tx_info$BambuTxClass <- NA_character_
 tx_info$BambuNDR     <- NA_real_
 
-if (!is.null(opt$se_rds) && file.exists(opt$se_rds)) {
+if (!is.null(opt$tx_classes) && file.exists(opt$tx_classes)) {
     cat("Reading Bambu transcript classes...\n")
-    se <- tryCatch(readRDS(opt$se_rds), error = function(e) {
-        warning("Could not read ", opt$se_rds, ": ", e$message)
-        NULL
-    })
+    bambu_meta <- read.csv(opt$tx_classes, stringsAsFactors = FALSE)
 
-    if (!is.null(se)) {
-        rd <- SummarizedExperiment::rowData(se)
-        # eqClassById is a list column; as.data.frame on it fails, and nothing here
-        # needs it. Keep only the atomic columns.
-        atomic <- vapply(seq_len(ncol(rd)), function(i) is.atomic(rd[[i]]), logical(1))
-        bambu_meta <- as.data.frame(rd[, atomic, drop = FALSE], stringsAsFactors = FALSE)
+    idx <- match(tx_info$qry_id, as.character(bambu_meta$TXNAME))
+    tx_info$BambuTxClass <- as.character(bambu_meta$txClassDescription)[idx]
+    tx_info$BambuNDR     <- as.numeric(bambu_meta$NDR)[idx]
 
-        if (all(c("TXNAME", "txClassDescription") %in% names(bambu_meta))) {
-            idx <- match(tx_info$qry_id, as.character(bambu_meta$TXNAME))
-            tx_info$BambuTxClass <- as.character(bambu_meta$txClassDescription)[idx]
-            if ("NDR" %in% names(bambu_meta)) {
-                tx_info$BambuNDR <- as.numeric(bambu_meta$NDR)[idx]
-            }
-            cat(sprintf("  %d of %d novel transcripts carry a Bambu class\n",
-                        sum(!is.na(tx_info$BambuTxClass)), nrow(tx_info)))
-        } else {
-            warning("The SummarizedExperiment carries no txClassDescription column; ",
-                    "BambuTxClass will be NA throughout.")
-        }
-    }
+    cat(sprintf("  %d of %d novel transcripts carry a Bambu class\n",
+                sum(!is.na(tx_info$BambuTxClass)), nrow(tx_info)))
 } else {
-    cat("No SummarizedExperiment supplied; BambuTxClass will be NA throughout.\n")
-}
-
-# "annotation" is Bambu's label for a reference transcript it merely quantified.
-# Only novel models reach this script, so seeing it here means the join matched the
-# wrong row rather than that the model is annotated.
-if (any(tx_info$BambuTxClass %in% "annotation", na.rm = TRUE)) {
-    warning(sum(tx_info$BambuTxClass %in% "annotation"),
-            " novel transcripts matched a Bambu class of \"annotation\"; ",
-            "check that the RDS and the GTF come from the same Bambu run.")
+    cat("No Bambu transcript classes supplied; BambuTxClass will be NA throughout.\n")
 }
 
 # Load counts
