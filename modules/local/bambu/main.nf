@@ -23,6 +23,7 @@ process BAMBU {
     path "BambuOutput_fullLengthCounts_transcript.txt"   , emit: full_length
     path "BambuOutput_uniqueCounts_transcript.txt"       , emit: unique_counts
     path "bambu_novel_transcripts.gtf"                   , emit: gtf_new_transcripts
+    path "bambu_novel_tx_classes.csv"                    , emit: tx_classes
     path "BambuOutput_extended_annotations.gtf"          , emit: gtf_all_transcripts
     path "se_multiSample.rds"                            , emit: rds_transcript
     path "seGene_multiSample.rds"                        , emit: rds_gene
@@ -84,6 +85,7 @@ process BAMBU {
     touch BambuOutput_fullLengthCounts_transcript.txt
     touch BambuOutput_uniqueCounts_transcript.txt
     touch bambu_novel_transcripts.gtf
+    printf 'TXNAME,GENEID,NDR,novelGene,novelTranscript,txClassDescription,readCount\\nBambuTx1,ENSG00000000000,0.05,FALSE,TRUE,newWithin,42\\n' > bambu_novel_tx_classes.csv
     touch BambuOutput_extended_annotations.gtf
     touch se_multiSample.rds
     touch seGene_multiSample.rds
