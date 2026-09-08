@@ -170,6 +170,22 @@ transcript_annotations <- rtracklayer::import("BambuOutput_extended_annotations.
 newtx_gtf <- transcript_annotations[grep("^BambuTx", transcript_annotations$transcript_id)]
 rtracklayer::export(newtx_gtf, "bambu_novel_transcripts.gtf")
 
+
+# --- Per-transcript novelty classes ---
+#
+# txClassDescription and NDR live only on this object, and the metadata refinement
+# steps need them. 
+
+tx_meta <- as.data.frame(SummarizedExperiment::rowData(se.multiSample)[
+    , c("TXNAME", "GENEID", "NDR", "novelGene", "novelTranscript",
+        "txClassDescription", "readCount")], stringsAsFactors = FALSE)
+
+tx_meta <- tx_meta[tx_meta$txClassDescription != "annotation", , drop = FALSE]
+
+write.csv(tx_meta, file.path(output_dir, "bambu_novel_tx_classes.csv"),
+          row.names = FALSE)
+cat(sprintf("Wrote %d novel transcript classes\n", nrow(tx_meta)))
+
 # --- Create and save plots ---
 
 # Create a list of plots
