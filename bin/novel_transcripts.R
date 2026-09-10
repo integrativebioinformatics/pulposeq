@@ -400,11 +400,11 @@ biotype[related & is_noncod & is_lnc_ref]    <- "novel_lncRNA"
 biotype[related & is_noncod & !is_lnc_ref]   <- "novel_non_coding"
 tx_info$transcript_biotype <- biotype
 
-# The 200 nt floor is the consensus lower bound for a long non-coding RNA. Applied
+# The 500 nt floor is the consensus lower bound for a long non-coding RNA. Applied
 # to every candidate rather than only the lncRNA branch, so the three categories
 # stay comparable to one another.
 eligible <- tx_info[tx_info$class_code %in% CANDIDATE_CODES &
-                        tx_info$len >= 200 &
+                        tx_info$len >= 500 &
                         !is.na(tx_info$transcript_biotype), ]
 
 routed <- table(eligible$transcript_biotype)
