@@ -174,11 +174,7 @@ normalise_ref_gene <- function(ids) {
 
 # What the novel transcript was compared against, recorded on every novel record
 # rather than only in the GTF.
-#
-# "ref" rather than "host": a host is something a transcript sits inside, which is
-# true for i, x, m and n but backwards for k and y, where the novel transcript
-# CONTAINS the reference. There is no separate host id -- it was a normalised copy
-# of ref_gene_id and nothing more -- so the placeholder is cleaned in place instead.
+
 tx_info$ref_gene_id <- normalise_ref_gene(tx_info$ref_gene_id)
 tx_info$ref_id      <- normalise_ref_gene(tx_info$ref_id)
 
@@ -199,6 +195,16 @@ tx_info$ref_transcript_name    <- unname(ref_tx_name[tx_info$ref_id])
 tx_info$ref_gene_strand    <- unname(ref_gene_strand[tx_info$ref_gene_id])
 tx_info$same_strand_as_ref <- ifelse(is.na(tx_info$ref_gene_strand), NA,
                                      tx_info$strand == tx_info$ref_gene_strand)
+# --- Naming: what the pipeline/Bambu decided vs what it was compared against ---------
+#
+names(tx_info)[names(tx_info) == "ref_gene_id"]            <- "compared_gene_id"
+names(tx_info)[names(tx_info) == "ref_id"]                 <- "compared_transcript_id"
+names(tx_info)[names(tx_info) == "ref_gene_name"]          <- "compared_gene_name"
+names(tx_info)[names(tx_info) == "ref_transcript_name"]    <- "compared_transcript_name"
+names(tx_info)[names(tx_info) == "ref_gene_biotype"]       <- "compared_gene_biotype"
+names(tx_info)[names(tx_info) == "ref_transcript_biotype"] <- "compared_transcript_biotype"
+names(tx_info)[names(tx_info) == "ref_gene_strand"]        <- "compared_gene_strand"
+names(tx_info)[names(tx_info) == "same_strand_as_ref"]     <- "same_strand_as_compared"
 
 # --- Bambu's own view of why each model is novel -------------------------------
 #
@@ -289,7 +295,7 @@ classify_class_code <- function(codes, same_strand = NULL) {
 }
 
 tx_info$classification <- classify_class_code(tx_info$class_code,
-                                              tx_info$same_strand_as_ref)
+                                              tx_info$same_strand_as_compared)
 
 # Save the metadata of all novel transcripts. Written after the classification so
 # the full table carries it as well, including for the class codes that never
@@ -298,39 +304,31 @@ cat("Saving novel transcripts metadata...\n")
 write.csv(tx_info, file="novel_transcripts_metadata.csv", row.names = FALSE)
 
 #' Build the attribute set written into the novel GTFs.
-#'
-#' transcript_biotype is carried on the metadata rather than derived here, so the
-#' combined GTF keeps each transcript's own category when the three subsets are
-#' bound together. At gene level, a novel transcript arising from a known gene
-#' keeps that gene's real biotype; only genuinely new loci, which gffcompare
-#' reports without a reference gene, are labelled "novel".
 novel_attrs <- function(meta) {
-    gene_biotype <- meta$ref_gene_biotype
+    gene_biotype <- meta$compared_gene_biotype
     gene_biotype[is.na(gene_biotype)] <- "novel"
 
     list(
-        transcript_status      = rep("novel", nrow(meta)),
-        transcript_biotype     = as.character(meta$transcript_biotype),
-        gene_biotype           = gene_biotype,
-        class_code             = as.character(meta$class_code),
-        classification         = as.character(meta$classification),
-        # Which part of the model Bambu had to invent, which the class code does not
-        # say: a `j` whose only novelty is a new last exon and a `j` that is allNew
-        # carry the same code.
-        BambuTxClass           = as.character(meta$BambuTxClass),
-        BambuNDR               = as.character(meta$BambuNDR),
-        # What it was compared against, carried on the GTF as well as the CSV so the
-        # file is self-describing in IGV without the metadata beside it.
-        ref_gene_id            = meta$ref_gene_id,
-        ref_gene_name          = as.character(meta$ref_gene_name),
-        ref_gene_biotype       = as.character(meta$ref_gene_biotype),
-        ref_transcript_id      = as.character(meta$ref_id),
-        ref_transcript_name    = as.character(meta$ref_transcript_name),
-        ref_transcript_biotype = as.character(meta$ref_transcript_biotype),
-        gene_name              = as.character(meta$gene_name)
+        transcript_status           = rep("novel", nrow(meta)),
+        # pulposeq_ prefix: these are this pipeline's calls, not the annotation's.
+        # A novel model sitting in an annotated gene would otherwise carry the
+        # reference's gene_type and a pipeline gene_biotype on the same row with
+        # nothing to say which is which.
+        pulposeq_transcript_biotype = as.character(meta$pulposeq_transcript_biotype),
+        pulposeq_gene_biotype       = gene_biotype,
+        class_code                  = as.character(meta$class_code),
+        classification              = as.character(meta$classification),
+        BambuTxClass                = as.character(meta$BambuTxClass),
+        BambuNDR                    = as.character(meta$BambuNDR),
+        compared_gene_id            = meta$compared_gene_id,
+        compared_gene_name          = as.character(meta$compared_gene_name),
+        compared_gene_biotype       = as.character(meta$compared_gene_biotype),
+        compared_transcript_id      = as.character(meta$compared_transcript_id),
+        compared_transcript_name    = as.character(meta$compared_transcript_name),
+        compared_transcript_biotype = as.character(meta$compared_transcript_biotype),
+        gene_name                   = as.character(meta$gene_name)
     )
 }
-
 #' Subset the Bambu GTF to a set of transcripts, attach the novel attributes and
 #' write it out. Returns the exon records, which the exon-length summaries reuse.
 write_novel_gtf <- function(meta, path) {
@@ -386,8 +384,8 @@ LNCRNA_GENE_BIOTYPES <- c(
     "lncRNA"
 )
 
-is_lnc_ref  <- !is.na(tx_info$ref_gene_biotype) &
-                   tx_info$ref_gene_biotype %in% LNCRNA_GENE_BIOTYPES
+is_lnc_ref  <- !is.na(tx_info$compared_gene_biotype) &
+                   tx_info$compared_gene_biotype %in% LNCRNA_GENE_BIOTYPES
 is_coding   <- !is.na(tx_info$prediction) & tx_info$prediction == 'coding'
 is_noncod   <- !is.na(tx_info$prediction) & tx_info$prediction == 'non-coding'
 independent <- tx_info$class_code %in% INDEPENDENT_CODES
@@ -398,37 +396,37 @@ biotype[(independent | related) & is_coding] <- "novel_protein_coding"
 biotype[independent & is_noncod]             <- "novel_lncRNA"
 biotype[related & is_noncod & is_lnc_ref]    <- "novel_lncRNA"
 biotype[related & is_noncod & !is_lnc_ref]   <- "novel_non_coding"
-tx_info$transcript_biotype <- biotype
+tx_info$pulposeq_transcript_biotype <- biotype
 
 # The 500 nt floor is the consensus lower bound for a long non-coding RNA. Applied
 # to every candidate rather than only the lncRNA branch, so the three categories
 # stay comparable to one another.
 eligible <- tx_info[tx_info$class_code %in% CANDIDATE_CODES &
                         tx_info$len >= 500 &
-                        !is.na(tx_info$transcript_biotype), ]
+                        !is.na(tx_info$pulposeq_transcript_biotype), ]
 
-routed <- table(eligible$transcript_biotype)
+routed <- table(eligible$pulposeq_transcript_biotype)
 cat(sprintf("Routed %d candidates: %s\n", nrow(eligible),
             paste(sprintf("%s=%d", names(routed), as.integer(routed)),
                   collapse = ", ")))
 
 # Select novel lncRNA candidates
 cat("Processing lncRNA candidates...\n")
-new_lncRNAs <- eligible[eligible$transcript_biotype == "novel_lncRNA", ]
+new_lncRNAs <- eligible[eligible$pulposeq_transcript_biotype == "novel_lncRNA", ]
 
 write.csv(new_lncRNAs, file="novel_lncRNAs_metadata.csv", row.names = FALSE)
 new_lncRNAs_exons_gtf <- write_novel_gtf(new_lncRNAs, "novel_lncRNAs.gtf")
 
 # Select novel protein-coding candidates
 cat("Processing protein-coding candidates...\n")
-new_mRNAs <- eligible[eligible$transcript_biotype == "novel_protein_coding", ]
+new_mRNAs <- eligible[eligible$pulposeq_transcript_biotype == "novel_protein_coding", ]
 
 write.csv(new_mRNAs, file="novel_protein-coding_metadata.csv", row.names = FALSE)
 new_mRNAs_exons_gtf <- write_novel_gtf(new_mRNAs, "novel_protein-coding.gtf")
 
 # Select the non-coding models that are not claimed as lncRNA
 cat("Processing non-coding candidates...\n")
-new_ncRNAs <- eligible[eligible$transcript_biotype == "novel_non_coding", ]
+new_ncRNAs <- eligible[eligible$pulposeq_transcript_biotype == "novel_non_coding", ]
 
 write.csv(new_ncRNAs, file="novel_non_coding_metadata.csv", row.names = FALSE)
 write_novel_gtf(new_ncRNAs, "novel_non_coding.gtf")
