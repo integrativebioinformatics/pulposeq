@@ -23,7 +23,7 @@ option_list <- list(
 opt_parser <- OptionParser(option_list=option_list)
 opt <- parse_args(opt_parser)
 
-required <- c("annotations_gtf", "fulllength_gtf", "unique_gtf",
+required <- c("annotations_gtf",
               "known_metadata", "novel_metadata", "annotation")
 missing <- required[vapply(required, function(x) is.null(opt[[x]]), logical(1))]
 if (length(missing) > 0) {
