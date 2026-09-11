@@ -264,13 +264,16 @@ Only produced for ONT cDNA libraries the pipeline orients itself, and skipped by
 | `BambuOutput_CPM_transcript_validated.txt` | Transcript-level CPM matrix for validated features. |
 | `BambuOutput_uniqueCounts_transcript_validated.txt` | Uniquely mapped transcript count matrix for validated features. |
 | `BambuOutput_fullLength_validated.gtf` | GTF of validated full-length transcript isoforms. |
-| `BambuOutput_annotations_validated.gtf` | Final validated annotation. |
+| `BambuOutput_annotations_validated.gtf` | Validated annotation. |
 | `BambuOutput_uniquelyMapped_validated.gtf` | Validated transcript isoforms supported by uniquely mapped reads. |
-| `annotations_final.gtf` | Known transcripts re-read from the reference with CDS and UTR features intact, plus the novel models. What the genomic context figures are drawn from. |
+| `annotations_final.gtf` | Known transcripts re-read from the reference with CDS and UTR features intact, plus the novel models with the pipeline's attributes attached. |
 | `pca_validated.png`, `pca_grouped_validated.png` | Bambu's PCA, regenerated from the curated transcriptome. |
 | `heatmap_gene_validated.png`, `heatmap_transcript_validated.png` | Bambu's expression heatmaps, regenerated from the curated transcriptome. |
 | `se_multiSample_validated.rds`, `seGene_multiSample_validated.rds` | The `SummarizedExperiment` objects subset to the curated features. |
 | `validation_summary.csv` | The curation yield, one row per feature type. See below. |
+
+> [!NOTE]
+> The pipeline's own metadata lives in `annotations_final.gtf` and in the metadata CSVs.
 
 #### Reading `validation_summary.csv`
 
@@ -289,23 +292,62 @@ report the size of the reference annotation as a failure of the curation.
 
 ### Annotated GTF attributes
 
-Bambu writes only `gene_id`, `transcript_id` and `exon_number` into its GTF output. pulposeq adds the attributes below to every `GTF` it generates, so each file is self-describing and can be filtered without cross-referencing the metadata tables.
+Bambu writes only `gene_id`, `transcript_id` and `exon_number` into its GTF output.
+`annotations_final.gtf` adds the attributes below, so the file is self-describing and
+can be filtered without cross-referencing the metadata tables.
+
+Two prefixes:
+
+- **`pulposeq_`** — what this pipeline decided.
+- **`compared_`** — what gffcompare matched the model against.
+
+Everything unprefixed on a known transcript is the reference's own, untouched.
+
+#### On known transcripts
+
+Exactly one attribute is added:
 
 | Attribute | Description |
-|--------------------------------|----------------------------------------|
-| `transcript_status` | `known` if the transcript is present in the reference annotation, `novel` if it was assembled by Bambu. |
-| `gene_biotype` | For known transcripts, the biotype from the reference annotation. For novel transcripts arising from a known gene, that gene's reference biotype; for novel transcripts at previously unannotated loci, `novel`. |
-| `transcript_biotype` | For known transcripts, the biotype from the reference annotation. For novel transcripts, one of `novel_lncRNA`, `novel_protein_coding` or `novel_non_coding` — see [How novel models are routed](#how-novel-models-are-routed). |
-| `gene_name` | Gene symbol, where the reference annotation or gffcompare provides one. |
-| `transcript_name` | Transcript name from the reference annotation (known transcripts only). |
-| `class_code` | gffcompare class code relative to the reference (novel transcripts only). |
-| `classification` | Human-readable reading of `class_code`, following gffcompare's own definitions, with `i` qualified `(sense)` or `(antisense)` (novel transcripts only). See [Which class codes become candidates](#which-class-codes-become-candidates). |
-| `ref_gene_id` | Reference gene the novel transcript was matched against, where gffcompare found one (novel transcripts only). |
-| `BambuTxClass` | Bambu's `txClassDescription`: which part of the model was not already in the annotation. Colon-separated where a model carries several (novel transcripts only). See [Bambu transcript classes](#bambu-transcript-classes). |
-| `BambuNDR` | The novel discovery rate Bambu assigned to this specific transcript — a per-model score, not the run-level `ndr` threshold it was tested against (novel transcripts only). |
+|---|---|
+| `transcript_status` | `known` — the transcript is present in the reference annotation and survived validation. |
+
+Every other attribute on a known record comes from the reference and is written as
+that annotation had it: `gene_name`, `transcript_name`, `level`, `tag`, and the
+biotype under whichever vocabulary the source uses — `gene_type`/`transcript_type`
+for GENCODE, `gene_biotype`/`transcript_biotype` for Ensembl. 
+#### On novel transcripts
+
+| Attribute | Description |
+|---|---|
+| `transcript_status` | `novel` — assembled by Bambu. |
+| `pulposeq_transcript_biotype` | One of `novel_lncRNA`, `novel_protein_coding` or `novel_non_coding` — see [How novel models are routed](#how-novel-models-are-routed). |
+| `pulposeq_gene_biotype` | The compared gene's biotype where gffcompare found one; `novel` at a previously unannotated locus. |
+| `gene_name` | Gene symbol for the Bambu gene the model was assigned to, where one is available. |
+| `class_code` | gffcompare class code (novel transcripts only). |
+| `classification` | Human-readable reading of `class_code`, following gffcompare's own definitions, with `i` qualified `(sense)` or `(antisense)`. See [Which class codes become candidates](#which-class-codes-become-candidates). |
+| `BambuTxClass` | Bambu's `txClassDescription`: which part of the model was not already in the annotation. Colon-separated where a model carries several. See [Bambu transcript classes](#bambu-transcript-classes). |
+| `BambuNDR` | The novel discovery rate Bambu assigned to this specific transcript — a per-model score, not the run-level `ndr` threshold it was tested against. |
+| `compared_gene_id` | The gene gffcompare matched the model against, where it found one. |
+| `compared_gene_name` | That gene's symbol. |
+| `compared_gene_biotype` | That gene's biotype. |
+| `compared_transcript_id` | The specific reference transcript matched. |
+| `compared_transcript_name` | That transcript's name. |
+| `compared_transcript_biotype` | That transcript's biotype. |
 
 > [!NOTE]
-> Novel transcripts frequently arise from genes that are already annotated. In that case `gene_biotype` reports the reference gene's real biotype while `transcript_biotype` records the novel isoform's predicted class, so the two can legitimately differ, e.g. a `novel_lncRNA` transcript within a `protein_coding` gene.
+> `pulposeq_gene_biotype` and `pulposeq_transcript_biotype` can legitimately differ: a
+> novel model inside an annotated gene takes that gene's real biotype at the gene level
+> while the transcript level records what the pipeline called the isoform — a
+> `novel_lncRNA` transcript within a `protein_coding` gene, for instance.
+
+> [!IMPORTANT]
+> **`compared_gene_id` is gffcompare's assignment, and it need not equal the `gene_id`
+> Bambu assigned.** Bambu could assign a parent gene by exonic base-pair overlap;
+> while gffcompare can match by splice junction and reports a single best reference
+> transcript. 
+> Both are on the record for that reason. Gene-level counts aggregate under Bambu's
+> `gene_id`; the genomic context figures and the report's novel section key on
+> `compared_*`, and a panel draws both loci where they differ.
 
 ## `gffcompare/` (novel transcript comparison)
 
@@ -354,6 +396,12 @@ With `rnamining`:
 | `predictions.txt` | Full RNAmining prediction output for all evaluated candidates. |
 
 ## `novel_transcripts/` and `ref_transcripts/` (metadata handling)
+
+> [!NOTE]
+> `novel_transcripts_metadata.csv` and `novel_transcripts_validated_metadata.csv` use
+> the same `pulposeq_*` / `compared_*` vocabulary as the GTF attributes above. The
+> reference-derived metadata in `ref_transcripts/` is unaffected and keeps
+> `gene_biotype` / `transcript_biotype`.
 
 | File | Description |
 |-------------------------|-----------------------------------------------|
@@ -413,15 +461,15 @@ matching or contained by a reference was already resolved as annotated. `s`, `e`
 
 ### How novel models are routed
 
-Each candidate is assigned one of three `transcript_biotype` values, from its class
+Each candidate is assigned one of three `pulposeq_transcript_biotype` values, from its class
 code, its coding-potential prediction, and the biotype of the reference gene it was
-matched against.
+matched against. Minimal transcript length accepted is 500nt, following [Mattick's lncRNA consensus statement](https://doi.org/10.1038/s41580-022-00566-8).
 
 **`u`, `i` and `x` share no splice structure with a reference.** `u` has no
 reference at all, `i` lies wholly inside an intron, and `x` overlaps on the opposite
 strand. The coding prediction decides alone:
 
-| Prediction | `transcript_biotype` |
+| Prediction | `pulposeq_transcript_biotype` |
 |---|---|
 | non-coding | `novel_lncRNA` |
 | coding | `novel_protein_coding` |
@@ -435,7 +483,7 @@ protein-coding gene — a retained intron, an NMD target, a truncated model — 
 predicted non-coding too, and calling one a novel lncRNA would assert a new
 non-coding gene at a locus that already has a coding one.
 
-| Prediction | Reference gene | `transcript_biotype` |
+| Prediction | Compared gene | `pulposeq_transcript_biotype` |
 |---|---|---|
 | coding | any | `novel_protein_coding` |
 | non-coding | lncRNA | `novel_lncRNA` |
@@ -481,21 +529,32 @@ came from different Bambu runs, and the pipeline warns rather than passing it on
 
 ### Reference identity on novel records
 
-Every novel record carries what it was compared against: `ref_gene_id`,
-`ref_gene_name`, `ref_gene_biotype`, `ref_id`, `ref_transcript_name` and
-`ref_transcript_biotype`, on the metadata CSVs and as GTF attributes.
+### What each novel record was compared against
+
+Every novel record carries gffcompare's match: `compared_gene_id`,
+`compared_gene_name`, `compared_gene_biotype`, `compared_transcript_id`,
+`compared_transcript_name` and `compared_transcript_biotype`, on the metadata CSVs
+and as GTF attributes.
 
 The **transcript**-level biotype is not redundant with the gene-level one, and the
-difference is where the interesting cases live. A `y`-class novel transcript
-containing `TARDBP-221` has `ref_gene_biotype` `protein_coding` and
-`ref_transcript_biotype` `nonsense_mediated_decay` — only the second says what it
-actually contains.
+difference is where the interesting cases live. For example: `y`-class novel transcript
+containing `TARDBP-221` has `compared_gene_biotype` `protein_coding` and
+`compared_transcript_biotype` `nonsense_mediated_decay` — only the second says what
+it actually contains.
 
-These are named `ref_` rather than `host_` because a host is something a transcript
-sits *inside*, which holds for `i`, `x`, `m` and `n` but is backwards for `k` and
-`y`, where the novel transcript contains the reference. The word *host* is kept only
-in the genomic context outputs, which cover intronic candidates alone, where it is
-accurate.
+These are named `compared_`, because gffcompare's match is one
+defensible answer, not the answer: Bambu's parent-gene assignment is arrived at
+differently and can name a different gene at the same locus. See the note under
+[Annotated GTF attributes](#annotated-gtf-attributes).
+
+They are not named `host_` either. A host is something a transcript sits *inside*,
+which holds for `i`, `x`, `m` and `n` but is backwards for `k` and `y`, where the
+novel transcript contains the reference. The word *host* is kept only in the genomic
+context outputs, which cover intronic candidates alone, where it is accurate.
+
+Two further columns record orientation relative to the compared gene:
+`compared_gene_strand` and `same_strand_as_compared`. The second is what qualifies
+class code `i` as *(sense)* or *(antisense)* in `classification`.
 
 
 ## `genomic_context/` (coverage and transcript models at selected loci)
@@ -503,10 +562,10 @@ accurate.
 | File | Description |
 |--------------------------|----------------------------------------------|
 | `genomic_context_<gene>.png` | Gene structure, every isoform at the locus with novel ones highlighted, and one coverage track per sample on a shared scale. Selected from genes carrying both known and novel isoforms. |
-| `genomic_context_candidates.csv` | The loci drawn, with their windows, isoform counts and the `BambuTxClass` of the example transcript. |
+| `genomic_context_candidates.csv` | The loci drawn, with their windows, isoform counts, `compared_gene_biotype` and the `BambuTxClass` of the example transcript. |
 | `genomic_context_regions.gtf` | The plotted regions as a small GTF. Built to feed `makeTxDbFromGFF`, but useful on its own — load it in IGV beside the published bigWigs. |
 | `intronic_context_<transcript>.png` | Sense-intronic candidates: models lying inside a reference gene's intron, on that gene's own strand. Windowed on the **whole host intron**, because a window drawn tightly around a truncated fragment looks discrete whatever it is. |
-| `intronic_context_candidates.csv` | The candidates drawn, with the structure and counts behind their ordering: `num_exons`, `full_length_support`, `counts_total`, `BambuTxClass`, and which samples quantified each. |
+| `intronic_context_candidates.csv` | The candidates drawn, keyed on `compared_gene_id` / `compared_gene_name` / `compared_gene_biotype`, with the structure and counts behind their ordering: `num_exons`, `full_length_support`, `counts_total`, `BambuTxClass`, and which samples quantified each. |
 
 Sense intronic is the one relationship the assembly cannot resolve on its own. Such a
 model is sequence-identical to part of its host's **unspliced precursor** — the primary
