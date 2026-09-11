@@ -221,26 +221,48 @@ tx_col <- function(name) {
   if (name %in% colnames(tx_md)) as.character(tx_md[[name]]) else NA_character_
 }
 
+#' First non-empty value across several attribute names, resolved per row.
+#'
+#' annotations_final.gtf mixes two vocabularies by design. Known transcripts come
+#' from the reference and keep its own naming -- gene_type/transcript_type in
+#' GENCODE, gene_biotype/transcript_biotype in Ensembl -- while novel models carry
+#' the pipeline's pulposeq_* attributes. Picking whichever column exists would
+#' resolve one group and leave the other NA, so the fallback runs row by row, the
+#' same way transcript identifiers are matched with and without a version suffix.
+tx_col_first <- function(...) {
+  out <- rep(NA_character_, length(tx_gr))
+  for (nm in c(...)) {
+    if (!nm %in% colnames(tx_md)) next
+    v <- as.character(tx_md[[nm]])
+    fill <- is.na(out) & !is.na(v) & nzchar(v)
+    out[fill] <- v[fill]
+  }
+  out
+}
+
 tx <- data.frame(
   gene_id            = tx_col("gene_id"),
   gene_name          = tx_col("gene_name"),
   transcript_id      = tx_col("transcript_id"),
   transcript_name    = tx_col("transcript_name"),
-  transcript_biotype = tx_col("transcript_biotype"),
+  transcript_biotype = tx_col_first("pulposeq_transcript_biotype",
+                                    "transcript_biotype", "transcript_type"),
+  gene_biotype       = tx_col_first("pulposeq_gene_biotype",
+                                    "gene_biotype", "gene_type"),
   transcript_status  = tx_col("transcript_status"),
   class_code         = tx_col("class_code"),
   classification     = tx_col("classification"),
-  # What gffcompare matched the model against. Needed because the novel model and
-  # the gene it relates to are often not the same gene_id: Bambu gives an intronic
-  # or antisense model its own gene, so a panel built from the model's own gene
-  # alone would show it against nothing.
-  ref_gene_id        = tx_col("ref_gene_id"),
-  ref_gene_name      = tx_col("ref_gene_name"),
-  ref_gene_biotype   = tx_col("ref_gene_biotype"),
-  # The reference TRANSCRIPT a novel model was classified against, which decides
-  # which undetected isoforms are worth drawing, and names the match on the label.
-  ref_transcript_id   = tx_col("ref_transcript_id"),
-  ref_transcript_name = tx_col("ref_transcript_name"),
+  # What gffcompare matched the model against. Needed because Bambu's gene_id and
+  # gffcompare's match are frequently different, and at a nested locus both are
+  # defensible: Bambu assigns by exonic overlap, gffcompare by splice junction, and
+  # a transcript carrying a complete intron from each of two overlapping genes gets
+  # a different answer from each. The panel draws both loci for that reason.
+  compared_gene_id            = tx_col("compared_gene_id"),
+  compared_gene_name          = tx_col("compared_gene_name"),
+  compared_gene_biotype       = tx_col("compared_gene_biotype"),
+  compared_transcript_id      = tx_col("compared_transcript_id"),
+  compared_transcript_name    = tx_col("compared_transcript_name"),
+  compared_transcript_biotype = tx_col("compared_transcript_biotype"),
   # Bambu's own account of which part of the model is new.
   BambuTxClass        = tx_col("BambuTxClass"),
   chrom              = as.character(GenomeInfoDb::seqnames(tx_gr)),
@@ -276,8 +298,8 @@ cls <- ifelse(is.na(tx$classification) | !nzchar(tx$classification), "",
 # a novel model shares a junction with "a reference transcript"; without naming
 # which, the panel leaves the reader to work it out from the tracks. The reference
 # transcript's name where the annotation gives one, its identifier otherwise.
-ref_tx <- ifelse(!is.na(tx$ref_transcript_name) & nzchar(tx$ref_transcript_name),
-                 tx$ref_transcript_name, tx$ref_transcript_id)
+ref_tx <- ifelse(!is.na(tx$compared_transcript_name) & nzchar(tx$compared_transcript_name),
+                 tx$compared_transcript_name, tx$compared_transcript_id)
 ref_mark <- ifelse(is.na(ref_tx) | !nzchar(ref_tx), "", paste0(" | ", ref_tx))
 
 str_mark <- ifelse(tx$strand %in% c("+", "-"), paste0(" | ", tx$strand), "")
@@ -359,17 +381,18 @@ lookup0 <- function(map, key) { v <- unname(map[key]); v[is.na(v)] <- 0L; as.int
 if (nrow(novel_tx)) {
   # A panel is the novel model's own gene plus the reference gene it was matched
   # against, which are frequently different and occasionally the same.
-  ref_same <- !is.na(novel_tx$ref_gene_id) & novel_tx$ref_gene_id == novel_tx$gene_id
-  ref_use  <- !is.na(novel_tx$ref_gene_id) & !ref_same
+  ref_same <- !is.na(novel_tx$compared_gene_id) &
+                  novel_tx$compared_gene_id == novel_tx$gene_id
+  ref_use  <- !is.na(novel_tx$compared_gene_id) & !ref_same
 
   novel_tx$panel_n_tx    <- lookup0(n_tx_of,    novel_tx$gene_id) +
-    ifelse(ref_use, lookup0(n_tx_of,    novel_tx$ref_gene_id), 0L)
+    ifelse(ref_use, lookup0(n_tx_of,    novel_tx$compared_gene_id), 0L)
   novel_tx$panel_n_known <- lookup0(n_known_of, novel_tx$gene_id) +
-    ifelse(ref_use, lookup0(n_known_of, novel_tx$ref_gene_id), 0L)
+    ifelse(ref_use, lookup0(n_known_of, novel_tx$compared_gene_id), 0L)
   novel_tx$panel_n_novel <- lookup0(n_novel_of, novel_tx$gene_id) +
-    ifelse(ref_use, lookup0(n_novel_of, novel_tx$ref_gene_id), 0L)
+    ifelse(ref_use, lookup0(n_novel_of, novel_tx$compared_gene_id), 0L)
 
-  novel_tx$ref_class <- ref_class_of(novel_tx$ref_gene_biotype)
+  novel_tx$ref_class <- ref_class_of(novel_tx$compared_gene_biotype)
   novel_tx$stratum   <- paste(novel_tx$transcript_biotype, novel_tx$classification,
                               novel_tx$ref_class, sep = " | ")
 
@@ -391,7 +414,7 @@ if (nrow(novel_tx)) {
   # drops the thinnest evidence rather than whatever happened to sort last.
   strat_order <- names(sort(table(novel_tx$stratum), decreasing = TRUE))
 
-  locus_of <- paste(novel_tx$gene_id, novel_tx$ref_gene_id, sep = "~")
+  locus_of <- paste(novel_tx$gene_id, novel_tx$compared_gene_id, sep = "~")
   picked   <- integer(0)
   used     <- character(0)
 
@@ -411,7 +434,7 @@ if (nrow(novel_tx)) {
 
   cand <- do.call(rbind, lapply(seq_len(nrow(sel)), function(i) {
     r  <- sel[i, ]
-    pg <- unique(c(r$gene_id, r$ref_gene_id))
+    pg <- unique(c(r$gene_id, r$compared_gene_id))
     pg <- pg[!is.na(pg) & pg %in% genes$gene_id]
     g  <- genes[match(pg, genes$gene_id), , drop = FALSE]
     # A reference on another sequence is a broken match, not a panel. The model's own
@@ -419,11 +442,11 @@ if (nrow(novel_tx)) {
     g  <- g[g$chrom == r$chrom, , drop = FALSE]
 
     data.frame(
-      gene_id     = if (!is.na(r$ref_gene_id) && r$ref_gene_id %in% g$gene_id)
-                      r$ref_gene_id else r$gene_id,
-      gene_name   = if (!is.na(r$ref_gene_name) && nzchar(r$ref_gene_name))
-                      r$ref_gene_name
-                    else if (!is.na(r$ref_gene_id)) r$ref_gene_id else r$gene_id,
+      gene_id     = if (!is.na(r$compared_gene_id) && r$compared_gene_id %in% g$gene_id)
+                      r$compared_gene_id else r$gene_id,
+      gene_name   = if (!is.na(r$compared_gene_name) && nzchar(r$compared_gene_name))
+                      r$compared_gene_name
+                    else if (!is.na(r$compared_gene_id)) r$compared_gene_id else r$gene_id,
       chrom       = r$chrom,
       start       = min(g$start),
       end         = max(g$end),
@@ -443,7 +466,7 @@ if (nrow(novel_tx)) {
   cand$class_code     <- sel$class_code
   cand$ref_class      <- sel$ref_class
   cand$example_tx     <- sel$transcript_id
-  cand$ref_gene_biotype <- sel$ref_gene_biotype
+  cand$compared_gene_biotype <- sel$compared_gene_biotype
   cand$BambuTxClass   <- sel$BambuTxClass
 
   cand$label <- ifelse(is.na(cand$gene_name) | !nzchar(cand$gene_name),
@@ -475,13 +498,13 @@ sense_i <- which(grepl("^sense intronic", tx$classification))
 
 if (length(sense_i)) {
   flagged <- data.frame(
-    qry_id           = tx$transcript_id[sense_i],
-    ref_gene_id      = tx$ref_gene_id[sense_i],
-    ref_gene_biotype = tx$ref_gene_biotype[sense_i],
-    class_code       = tx$class_code[sense_i],
-    strand           = tx$strand[sense_i],
-    BambuTxClass     = tx$BambuTxClass[sense_i],
-    stringsAsFactors = FALSE
+    qry_id                = tx$transcript_id[sense_i],
+    compared_gene_id      = tx$compared_gene_id[sense_i],
+    compared_gene_biotype = tx$compared_gene_biotype[sense_i],
+    class_code            = tx$class_code[sense_i],
+    strand                = tx$strand[sense_i],
+    BambuTxClass          = tx$BambuTxClass[sense_i],
+    stringsAsFactors      = FALSE
   )
 
   # Exon count is not carried on `tx`, and it is the one number that says whether a
@@ -564,7 +587,7 @@ ref_introns_by_gene <- list()
 
 wanted_genes <- unique(c(
   if (nrow(cand))    unlist(strsplit(cand$panel_genes, ";")) else character(0),
-  if (nrow(flagged)) flagged$ref_gene_id else character(0)))
+  if (nrow(flagged)) flagged$compared_gene_id else character(0)))
 wanted_genes <- wanted_genes[!is.na(wanted_genes) & nzchar(wanted_genes)]
 
 if (length(wanted_genes) && !is.null(opt$annotation) && file.exists(opt$annotation)) {
@@ -602,7 +625,7 @@ if (nrow(flagged)) {
 
 if (nrow(flagged)) {
   win <- t(vapply(seq_len(nrow(flagged)), function(i) {
-    gid <- bare_id(flagged$ref_gene_id[i])
+    gid <- bare_id(flagged$compared_gene_id[i])
     ivs <- ref_introns_by_gene[[gid]]
     if (!is.null(ivs) && length(ivs)) {
       # The intron containing the candidate; if it straddles more than one, the
@@ -626,7 +649,7 @@ if (nrow(flagged)) {
 
   flagged$win_s <- pmax(1, win[, 1])
   flagged$win_e <- win[, 2]
-  flagged$ref_gene_name <- genes$gene_name[match(flagged$ref_gene_id, genes$gene_id)]
+  flagged$compared_gene_name <- genes$gene_name[match(flagged$compared_gene_id, genes$gene_id)]
 }
 
 cat(sprintf("%d sense-intronic candidates selected for drawing\n", nrow(flagged)))
@@ -698,7 +721,8 @@ if (length(windows) && !is.null(opt$annotation) && file.exists(opt$annotation)) 
     rt     <- ref_all[as.character(S4Vectors::mcols(ref_all)$type) == "transcript"]
     rt_md  <- S4Vectors::mcols(rt)
     rcol   <- function(n) if (n %in% colnames(rt_md)) as.character(rt_md[[n]]) else NA_character_
-    bt_col <- if ("transcript_biotype" %in% colnames(rt_md)) "transcript_biotype" else "transcript_type"
+    bt_col      <- if ("transcript_biotype" %in% colnames(rt_md)) "transcript_biotype" else "transcript_type"
+    gene_bt_col <- if ("gene_biotype" %in% colnames(rt_md)) "gene_biotype" else "gene_type"
 
     ref_tx <- data.frame(
       gene_id            = rcol("gene_id"),
@@ -706,17 +730,19 @@ if (length(windows) && !is.null(opt$annotation) && file.exists(opt$annotation)) 
       transcript_id      = rcol("transcript_id"),
       transcript_name    = rcol("transcript_name"),
       transcript_biotype = rcol(bt_col),
+      gene_biotype       = rcol(gene_bt_col),
       transcript_status  = "annotated",
       class_code         = NA_character_,
       classification     = NA_character_,
-      ref_gene_id        = NA_character_,
-      ref_gene_name      = NA_character_,
-      ref_gene_biotype   = NA_character_,
-      # These undetected reference transcripts are not novel models, so they have
-      # no reference match and no Bambu class. The columns exist because `tx` has
-      # them and rbind needs both frames to agree.
-      ref_transcript_id   = NA_character_,
-      ref_transcript_name = NA_character_,
+      compared_gene_id        = NA_character_,
+      compared_gene_name      = NA_character_,
+      compared_gene_biotype   = NA_character_,
+      # These undetected reference transcripts are not novel models, so nothing
+      # compared them against anything. The columns exist because `tx` has them and
+      # rbind needs both frames to agree.
+      compared_transcript_id      = NA_character_,
+      compared_transcript_name    = NA_character_,
+      compared_transcript_biotype = NA_character_,
       BambuTxClass        = NA_character_,
       chrom              = as.character(GenomeInfoDb::seqnames(rt)),
       strand             = as.character(BiocGenerics::strand(rt)),
@@ -780,7 +806,7 @@ if (nrow(cand)) {
 
     own  <- tx$gene_id %in% row_genes
     mine <- tx$transcript_status %in% "novel" &
-              (tx$ref_gene_id %in% row_genes | own)
+              (tx$compared_gene_id %in% row_genes | own)
 
     # An undetected annotated transcript earns a row only when gffcompare
     # classified one of this panel's novel models against it. Those are the
@@ -793,7 +819,7 @@ if (nrow(cand)) {
     # neighbour's transcripts because they fall inside the reference gene's span
     # does not scale: at a 2 kb TEC locus overlapped by a 40-isoform lincRNA, all
     # 40 qualified and the panel drew 2 detected models under 40 undetected ones.
-    ref_txids <- unique(tx$ref_transcript_id[in_win & mine])
+    ref_txids <- unique(tx$compared_transcript_id[in_win & mine])
     ref_txids <- bare_id(ref_txids[!is.na(ref_txids) & nzchar(ref_txids)])
 
     is_ann <- tx$transcript_status %in% "annotated"
@@ -815,15 +841,16 @@ if (nrow(flagged)) {
     # The host's isoforms for context, plus novel models classified against the host:
     # an intronic candidate carries its own Bambu gene id, so filtering on the host
     # gene alone would drop the transcript the figure exists to show.
-    # %in% throughout rather than ==: ref_gene_id is NA for every known transcript,
-    # and == would return NA, which indexes as NA and injects missing values.
-    host <- tx$gene_id %in% flagged$ref_gene_id[i]
+    # %in% throughout rather than ==: compared_gene_id is NA for every known
+    # transcript, and == would return NA, which indexes as NA and injects missing
+    # values.
+    host <- tx$gene_id %in% flagged$compared_gene_id[i]
     mine <- tx$transcript_status %in% "novel" &
-              (tx$ref_gene_id %in% flagged$ref_gene_id[i] | host)
+                (tx$compared_gene_id %in% flagged$compared_gene_id[i] | host)
 
     # Same rule as the stratified panels: an undetected annotated transcript is
     # drawn only where a novel model in this panel was classified against it.
-    ref_txids <- unique(tx$ref_transcript_id[in_win & mine])
+    ref_txids <- unique(tx$compared_transcript_id[in_win & mine])
     ref_txids <- bare_id(ref_txids[!is.na(ref_txids) & nzchar(ref_txids)])
 
     is_ann <- tx$transcript_status %in% "annotated"
@@ -1258,9 +1285,9 @@ if (nrow(cand)) {
                 row$stratum, row$label, row$chrom, row$win_s, row$win_e,
                 n_drawn, n_kno, n_nov, n_ann))
 
-    ref_bt <- if (is.na(row$ref_gene_biotype) || !nzchar(row$ref_gene_biotype)) {
+    ref_bt <- if (is.na(row$compared_gene_biotype) || !nzchar(row$compared_gene_biotype)) {
       row$ref_class
-    } else row$ref_gene_biotype
+    } else row$compared_gene_biotype
 
     cand$figure[i] <- draw_panel(
       chrom        = row$chrom, win_s = row$win_s, win_e = row$win_e,
@@ -1283,7 +1310,7 @@ if (nrow(cand)) {
   }
 
   write.csv(cand[, c("stratum", "novel_biotype", "classification", "class_code",
-                     "ref_class", "ref_gene_biotype", "BambuTxClass", "example_tx",
+                     "ref_class", "compared_gene_biotype", "BambuTxClass", "example_tx",
                      "gene_id", "gene_name", "label", "panel_genes", "chrom",
                      "start", "end", "win_s", "win_e", "n_tx", "n_known",
                      "n_novel", "n_annotated", "n_novel_lnc", "biotypes", "figure")],
@@ -1293,7 +1320,7 @@ if (nrow(cand)) {
   # zero-row table with a different header is harder to handle than an empty one
   # with the right header.
   empty_cols <- c("stratum", "novel_biotype", "classification", "class_code",
-                  "ref_class", "ref_gene_biotype", "BambuTxClass", "example_tx", "gene_id",
+                  "ref_class", "compared_gene_biotype", "BambuTxClass", "example_tx", "gene_id",
                   "gene_name", "label", "panel_genes", "chrom", "start", "end",
                   "win_s", "win_e", "n_tx", "n_known", "n_novel", "n_annotated", "n_novel_lnc",
                   "biotypes", "figure")
@@ -1310,8 +1337,8 @@ if (nrow(flagged)) {
   for (i in seq_len(nrow(flagged))) {
     row <- flagged[i, ]
     cat(sprintf("Drawing sense-intronic %s in %s intron at %s:%d-%d\n",
-                row$qry_id, ifelse(is.na(row$ref_gene_name), row$ref_gene_id,
-                                   row$ref_gene_name),
+                row$qry_id, ifelse(is.na(row$compared_gene_name), row$compared_gene_id,
+                                   row$compared_gene_name),
                 row$chrom, row$win_s, row$win_e))
 
     # Everything in the window, not just the host's isoforms: an intronic candidate
@@ -1321,20 +1348,20 @@ if (nrow(flagged)) {
     # code wording and strand.
     panel_tx <- tx[tx$transcript_id %in% flagged_ids[[i]], , drop = FALSE]
 
-    host_lab <- if (is.na(row$ref_gene_name) || !nzchar(row$ref_gene_name)) {
-      row$ref_gene_id
+    host_lab <- if (is.na(row$compared_gene_name) || !nzchar(row$compared_gene_name)) {
+      row$compared_gene_id
     } else {
-      row$ref_gene_name
+      row$compared_gene_name
     }
 
     flagged$figure[i] <- draw_panel(
       chrom        = row$chrom, win_s = row$win_s, win_e = row$win_e,
-      structure_gr = gene_structure(row$ref_gene_id),
+      structure_gr = gene_structure(row$compared_gene_id),
       panel_tx     = panel_tx,
       title        = sprintf("%s in %s", row$qry_id, host_lab),
       subtitle     = sprintf(
         "sense intronic (%s) | %s | %s%s | %s counts%s",
-        ifelse(is.na(row$ref_gene_biotype), "unknown biotype", row$ref_gene_biotype),
+        ifelse(is.na(row$compared_gene_biotype), "unknown biotype", row$compared_gene_biotype),
         if (isTRUE(row$num_exons == 1L)) "mono-exonic"
           else sprintf("%d exons", row$num_exons),
         if (isTRUE(row$full_length_support)) "full-length support"
@@ -1358,7 +1385,7 @@ if (nrow(flagged)) {
     )
   }
 
-  write.csv(flagged[, c("qry_id", "ref_gene_id", "ref_gene_name", "ref_gene_biotype",
+  write.csv(flagged[, c("qry_id", "compared_gene_id", "compared_gene_name", "compared_gene_biotype",
                         "chrom", "start", "end", "win_s", "win_e", "strand",
                         "class_code", "BambuTxClass", "num_exons",
                         "samples_quantified", "samples_total",
