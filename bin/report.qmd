@@ -512,7 +512,7 @@ The final validated outputs are provided in the `bambu_validated`, `novel_transc
 
 A novel transcript is carried forward only if it meets **all** of the following:
 
-- **Length ≥ 200 nt:** the consensus lower bound for a long non-coding RNA, applied to every category so the three stay comparable to one another.
+- **Length ≥ 500 nt:** the consensus lower bound for a long non-coding RNA, applied to every category so the three stay comparable to one another.
 - **A declared strand** (`+` or `-`): models Bambu could not orient are removed.
 - **Non-zero counts** in at least one sample.
 - **An accepted gffcompare class code:** `u`, `i`, `x`, `j`, `k`, `o`, `y`, `m` or `n`.
