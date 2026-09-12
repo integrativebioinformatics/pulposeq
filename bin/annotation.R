@@ -62,7 +62,7 @@ if (nrow(known) > 0) {
         key                    = known$transcript_id_version,
         transcript_status      = "known",
         gene_name              = NA_character_,
-        qry_gene_name          = NA_character_,
+        qry_gene_biotype          = NA_character_,
         pulposeq_gene_biotype  = NA_character_,
         transcript_name        = NA_character_,
         pulposeq_transcript_biotype = NA_character_,
@@ -99,8 +99,8 @@ if (nrow(novel) > 0) {
     # alone cannot represent that distinction and silently collapses the two, which
     # is exactly the bug this replaced. The fallback covers a metadata file written
     # before the column existed, and says so rather than pretending otherwise.
-    tx_biotype <- if ("transcript_biotype" %in% names(novel)) {
-        as.character(novel$transcript_biotype)
+    tx_biotype <- if ("pulposeq_transcript_biotype" %in% names(novel)) {
+        as.character(novel$pulposeq_transcript_biotype)
     } else {
         warning("novel metadata has no transcript_biotype column; falling back to ",
                 "the coding prediction, which cannot distinguish novel_lncRNA from ",
@@ -113,7 +113,7 @@ if (nrow(novel) > 0) {
     lookup$novel <- data.frame(
         key                    = novel$qry_id,
         transcript_status      = "novel",
-        gene_name              = as.character(novel$gene_name),
+        gene_name              = as.character(novel$qry_gene_name),
         qry_gene_biotype       = col("qry_gene_biotype"),
         pulposeq_gene_biotype  = gene_biotype,
         transcript_name        = NA_character_,
