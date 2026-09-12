@@ -52,13 +52,13 @@ ref_tx <- reference$tx
 # unchanged, so membership in the supplied annotation is the definition of "known".
 # Matching on whichever id form the counts use keeps Ensembl (unversioned) and
 # GENCODE (versioned) references both working.
-version_suffix <- any(tx$TXNAME %in% ref_tx$ensembl_transcript_id_version &
-                      !tx$TXNAME %in% ref_tx$ensembl_transcript_id)
+version_suffix <- any(tx$TXNAME %in% ref_tx$transcript_id_version &
+                      !tx$TXNAME %in% ref_tx$transcript_id)
 
 if (version_suffix) {
-    id_col <- "ensembl_transcript_id_version"
+    id_col <- "transcript_id_version"
 } else {
-    id_col <- "ensembl_transcript_id"
+    id_col <- "transcript_id"
 }
 
 ens_ids <- tx$TXNAME[tx$TXNAME %in% ref_tx[[id_col]]]
@@ -104,17 +104,17 @@ process_biotype <- function(biotype, metadata_file, exonlength_file, label) {
     exon_counts <- exon_counts_per_transcript(subset_exons)
 
     subset_tx <- merge(subset_tx, exon_counts,
-                       by.x="ensembl_transcript_id_version",
-                       by.y="ensembl_transcript_id_version", all.x=TRUE)
+                       by.x="transcript_id_version",
+                       by.y="transcript_id_version", all.x=TRUE)
 
     write.csv(subset_tx, metadata_file, row.names=FALSE)
     cat(paste("Written", metadata_file, "\n"))
 
     if (nrow(subset_exons) > 0) {
         exon_lengths <- data.frame(
-            ensembl_transcript_id         = subset_exons$ensembl_transcript_id,
-            ensembl_transcript_id_version = subset_exons$ensembl_transcript_id_version,
-            ensembl_exon_id               = subset_exons$ensembl_exon_id,
+            transcript_id         = subset_exons$transcript_id,
+            transcript_id_version = subset_exons$transcript_id_version,
+            exon_id               = subset_exons$exon_id,
             width                         = subset_exons$exon_chrom_end - subset_exons$exon_chrom_start + 1
         )
         write.csv(exon_lengths, exonlength_file, row.names=FALSE)
@@ -148,9 +148,9 @@ pc_ids  <- if (nrow(ens_pc) > 0) ens_pc[[id_col]] else character(0)
 # Reference attributes to write into the exported GTFs, keyed by transcript id
 known_attrs <- list(
     transcript_status   = rep("known", nrow(ens_tx)),
-    gene_name           = ens_tx$external_gene_name,
+    gene_name           = ens_tx$gene_name,
     gene_biotype        = ens_tx$gene_biotype,
-    transcript_name     = ens_tx$external_transcript_name,
+    transcript_name     = ens_tx$transcript_name,
     transcript_biotype  = ens_tx$transcript_biotype
 )
 
@@ -193,9 +193,9 @@ if (length(pc_ids) > 0) {
 cat("Processing gene counts...\n")
 gn <- read_table(opt$gene_counts, show_col_types = FALSE)
 if (version_suffix) {
-    gn_ids <- ens_tx$ensembl_gene_id_version
+    gn_ids <- ens_tx$gene_id_version
 } else {
-    gn_ids <- ens_tx$ensembl_gene_id
+    gn_ids <- ens_tx$gene_id
 }
 
 ann_gn_counts <- subset(gn, GENEID %in% gn_ids)

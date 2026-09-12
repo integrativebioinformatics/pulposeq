@@ -892,16 +892,16 @@ if (any(grepl("\\.", bambu_ids$transcripts))) {
 ids <- list(
   # Protein-coding
   ann_pc_tx = if (version_suffix) {
-    unique(ann_txome$ensembl_transcript_id_version[ann_txome$gene_biotype == "protein_coding"])
+    unique(ann_txome$transcript_id_version[ann_txome$gene_biotype == "protein_coding"])
   } else {
-    unique(ann_txome$ensembl_transcript_id[ann_txome$gene_biotype == "protein_coding"])
+    unique(ann_txome$transcript_id[ann_txome$gene_biotype == "protein_coding"])
   },
   
   # lncRNAs
   ann_lnc_tx = if (version_suffix) {
-    unique(ann_txome$ensembl_transcript_id_version[ann_txome$gene_biotype == "lncRNA"])
+    unique(ann_txome$transcript_id_version[ann_txome$gene_biotype == "lncRNA"])
   } else {
-    unique(ann_txome$ensembl_transcript_id[ann_txome$gene_biotype == "lncRNA"])
+    unique(ann_txome$transcript_id[ann_txome$gene_biotype == "lncRNA"])
   },
 
   # Filter to only include true novel protein-coding features (starting with "Bambu")
@@ -1142,7 +1142,7 @@ Biotypes classify RNAs based on their function or characteristics (e.g., `protei
 # Load and prepare data
 summary_data <- ann_txome %>% 
   group_by(gene_biotype, transcript_biotype) %>% 
-  summarise(count = n_distinct(ensembl_transcript_id_version), .groups = 'drop')
+  summarise(count = n_distinct(transcript_id_version), .groups = 'drop')
 
 # Categorize biotypes
 protein_coding <- summary_data %>% filter(gene_biotype == "protein_coding")
@@ -1410,7 +1410,7 @@ p15
 #| include: false
 
 ann_pc_lnc_txome$class_exon <- ifelse(ann_pc_lnc_txome$num_exons == 1, "mono-exonic", "multi-exonic")
-count_momu <- ann_pc_lnc_txome %>% group_by(gene_biotype, transcript_biotype, class_exon) %>% summarise(count = n_distinct(ensembl_transcript_id_version), .groups = 'drop')
+count_momu <- ann_pc_lnc_txome %>% group_by(gene_biotype, transcript_biotype, class_exon) %>% summarise(count = n_distinct(transcript_id_version), .groups = 'drop')
 
 p16 <- plot_count_lollipop(
   count_momu, x = transcript_biotype, y = gene_biotype, facet = "class_exon",
@@ -1465,8 +1465,8 @@ ann_pc_lnc_exon <- rbind(ann_pc_exon, ann_lnc_exon)
 
 ann_pc_lnc_exon <- merge(
   ann_pc_lnc_exon,
-  ann_pc_lnc_txome[, c("ensembl_transcript_id_version", "class_exon")],
-  by = "ensembl_transcript_id_version",
+  ann_pc_lnc_txome[, c("transcript_id_version", "class_exon")],
+  by = "transcript_id_version",
   all.x = TRUE
 )
 ```

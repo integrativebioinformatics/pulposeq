@@ -132,7 +132,7 @@ tailcrop: 0
 # directly from the annotation GTF, so no Ensembl release or BioMart dataset needs
 # to be declared.
 reference: "/your/path/to/references/dna.primary_assembly.fa"
-annotation: "/your/path/to/references/ensembl_annotation.release.chr.gtf"
+annotation: "/your/path/to/references/annotation.release.chr.gtf"
 
 # ------------------------------------------------------------------------------
 #  Transcript discovery
