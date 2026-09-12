@@ -323,6 +323,7 @@ for GENCODE, `gene_biotype`/`transcript_biotype` for Ensembl.
 | `pulposeq_transcript_biotype` | One of `novel_lncRNA`, `novel_protein_coding` or `novel_non_coding` — see [How novel models are routed](#how-novel-models-are-routed). |
 | `pulposeq_gene_biotype` | The compared gene's biotype where gffcompare found one; `novel` at a previously unannotated locus. |
 | `gene_name` | Gene symbol for the Bambu gene the model was assigned to, where one is available. |
+| `qry_gene_biotype` | That same gene's biotype in the reference. Not spelled `gene_biotype`, which would shadow the reference's own `gene_type` on the known rows of the same file. |
 | `class_code` | gffcompare class code (novel transcripts only). |
 | `classification` | Human-readable reading of `class_code`, following gffcompare's own definitions, with `i` qualified `(sense)` or `(antisense)`. See [Which class codes become candidates](#which-class-codes-become-candidates). |
 | `BambuTxClass` | Bambu's `txClassDescription`: which part of the model was not already in the annotation. Colon-separated where a model carries several. See [Bambu transcript classes](#bambu-transcript-classes). |
