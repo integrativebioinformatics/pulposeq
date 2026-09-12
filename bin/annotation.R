@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+    #!/usr/bin/env Rscript
 
 suppressPackageStartupMessages({
     library(GenomicRanges)
@@ -76,7 +76,6 @@ if (nrow(known) > 0) {
         compared_transcript_name    = NA_character_,
         compared_transcript_biotype = NA_character_,
         stringsAsFactors       = FALSE
-    )
     )
     # duplicate the rows under the unversioned key as well
     known_bare <- known_attrs
