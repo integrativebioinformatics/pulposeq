@@ -644,8 +644,8 @@ This section provides an overview of the curated transcriptome assembly at the g
 Features are grouped into three categories:
 
 - **Total** – All unique genes or transcripts identified in the assembly.
-- **Annotated** – Features matching an existing reference annotation (e.g. Ensembl). These are typically identified by IDs beginning with `ENS`.
-- **Novel** – Features discovered by Bambu that are not present in the reference annotation. These are typically identified by IDs beginning with `Bambu`.
+- **Annotated** – Features matching an existing reference annotation (Ensembl or GENCODE).
+- **Novel** – Features discovered by Bambu that are not present in the reference annotation.
 
 ::: callout-warning
 **Gene and transcript counts are not directly comparable.**
@@ -731,7 +731,7 @@ for (name in names(bambu_outputs)) {
     id_column <- as.character(data[[1]])
     bambu_ids[[name]] <- id_column
     total_count <- nrow(data)
-    annotated_count <- sum(startsWith(id_column, "ENS"))
+    annotated_count <- sum(!startsWith(id_column, "Bambu"))
     novel_count <- sum(startsWith(id_column, "Bambu"))
     file_result <- data.frame(Bambu = name, Total = total_count, Annotated = annotated_count, Novel = novel_count)
     results_list[[name]] <- file_result

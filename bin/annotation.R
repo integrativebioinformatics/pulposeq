@@ -59,7 +59,7 @@ lookup <- list()
 
 if (nrow(known) > 0) {
     known_attrs <- data.frame(
-        key                    = known$ensembl_transcript_id_version,
+        key                    = known$transcript_id_version,
         transcript_status      = "known",
         gene_name              = NA_character_,
         pulposeq_gene_biotype  = NA_character_,
@@ -79,7 +79,7 @@ if (nrow(known) > 0) {
     )
     # duplicate the rows under the unversioned key as well
     known_bare <- known_attrs
-    known_bare$key <- known$ensembl_transcript_id
+    known_bare$key <- known$transcript_id
     lookup$known <- rbind(known_attrs, known_bare)
 }
 
