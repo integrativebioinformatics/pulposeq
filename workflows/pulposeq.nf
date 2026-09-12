@@ -195,12 +195,11 @@ workflow PULPOSEQ {
         ch_versions = ch_versions.mix(VALIDATE_BAMBU_GTF.out.versions)
 
         //
-        // Attach biotype and classification attributes to the validated GTFs
+        // The final annotation, for plotting. The validated GTFs are read here but
+        // never rewritten -- they are published as validate_bambu_gtf.sh wrote them.
         //
         ANNOTATION (
             VALIDATE_BAMBU_GTF.out.annotations_validated_gtf,
-            VALIDATE_BAMBU_GTF.out.fullLength_validated_gtf,
-            VALIDATE_BAMBU_GTF.out.uniquelyMapped_validated_gtf,
             REF_TRANSCRIPTS.out.transcriptome_metadata,
             NOVEL_TRANSCRIPTS.out.novel_combined_metadata,
             params.annotation,

@@ -6,12 +6,7 @@ process ANNOTATION {
         'docker.io/itsiaguara/pulposeq:test' }"
 
     input:
-    // The three validated GTFs are staged into input/ so the script can write its
-    // results under the same basenames in the task directory without clobbering
-    // the staged copies.
-    path(annotations_gtf, stageAs: 'input/*')
-    path(fulllength_gtf,  stageAs: 'input/*')
-    path(unique_gtf,      stageAs: 'input/*')
+    path annotations_gtf
     path known_metadata
     path novel_metadata
     path annotation
@@ -19,9 +14,6 @@ process ANNOTATION {
     path gtf_utils
 
     output:
-    path "BambuOutput_annotations_validated.gtf"    , emit: annotations_validated_gtf
-    path "BambuOutput_fullLength_validated.gtf"     , emit: fullLength_validated_gtf
-    path "BambuOutput_uniquelyMapped_validated.gtf" , emit: uniquelyMapped_validated_gtf
     // Known transcripts re-read from the reference with CDS and UTR intact, plus
     // the novel models. This is what the genomic context figures are drawn from.
     path "annotations_final.gtf"                    , emit: final_gtf
@@ -35,8 +27,6 @@ process ANNOTATION {
     """
     Rscript $r_script \\
         --annotations_gtf ${annotations_gtf} \\
-        --fulllength_gtf ${fulllength_gtf} \\
-        --unique_gtf ${unique_gtf} \\
         --known_metadata ${known_metadata} \\
         --novel_metadata ${novel_metadata} \\
         --annotation ${annotation} \\
@@ -53,9 +43,6 @@ process ANNOTATION {
 
     stub:
     """
-    touch BambuOutput_annotations_validated.gtf
-    touch BambuOutput_fullLength_validated.gtf
-    touch BambuOutput_uniquelyMapped_validated.gtf
     touch annotations_final.gtf
 
     cat <<-END_VERSIONS > versions.yml

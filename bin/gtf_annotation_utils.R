@@ -159,12 +159,12 @@ read_reference_gtf <- function(path) {
 
     tx <- data.frame(
         chromosome_name               = norm_seqnames(tx_gr),
-        ensembl_gene_id               = gene_ids$bare,
-        ensembl_gene_id_version       = gene_ids$versioned,
-        ensembl_transcript_id         = tx_ids$bare,
-        ensembl_transcript_id_version = tx_ids$versioned,
-        external_transcript_name      = if ("transcript_name" %in% cols) as.character(tx_gr$transcript_name) else NA_character_,
-        external_gene_name            = if ("gene_name" %in% cols) as.character(tx_gr$gene_name) else NA_character_,
+        gene_id               = gene_ids$bare,
+        gene_id_version       = gene_ids$versioned,
+        transcript_id         = tx_ids$bare,
+        transcript_id_version = tx_ids$versioned,
+        transcript_name      = if ("transcript_name" %in% cols) as.character(tx_gr$transcript_name) else NA_character_,
+        gene_name            = if ("gene_name" %in% cols) as.character(tx_gr$gene_name) else NA_character_,
         strand                        = as.character(strand(tx_gr)),
         transcript_start              = start(tx_gr),
         transcript_end                = end(tx_gr),
@@ -184,9 +184,9 @@ read_reference_gtf <- function(path) {
 
     exons <- data.frame(
         chromosome_name               = norm_seqnames(exon_gr),
-        ensembl_transcript_id         = exon_tx_ids$bare,
-        ensembl_transcript_id_version = exon_tx_ids$versioned,
-        ensembl_exon_id               = exon_ids,
+        transcript_id         = exon_tx_ids$bare,
+        transcript_id_version = exon_tx_ids$versioned,
+        exon_id               = exon_ids,
         exon_chrom_start              = start(exon_gr),
         exon_chrom_end                = end(exon_gr),
         stringsAsFactors              = FALSE
@@ -202,18 +202,18 @@ read_reference_gtf <- function(path) {
     }
 
     gene_biotype <- dual_key(tx$gene_biotype,
-                             tx$ensembl_gene_id, tx$ensembl_gene_id_version)
-    gene_name    <- dual_key(tx$external_gene_name,
-                             tx$ensembl_gene_id, tx$ensembl_gene_id_version)
+                             tx$gene_id, tx$gene_id_version)
+    gene_name    <- dual_key(tx$gene_name,
+                             tx$gene_id, tx$gene_id_version)
 
     # Transcript level, which the gene level cannot stand in for: a
     # nonsense_mediated_decay or retained_intron isoform of a protein_coding gene
     # has gene_biotype "protein_coding" and transcript_biotype something else
     # entirely, and it is the transcript a novel model was actually compared against.
     tx_biotype <- dual_key(tx$transcript_biotype,
-                           tx$ensembl_transcript_id, tx$ensembl_transcript_id_version)
-    tx_name    <- dual_key(tx$external_transcript_name,
-                           tx$ensembl_transcript_id, tx$ensembl_transcript_id_version)
+                           tx$transcript_id, tx$transcript_id_version)
+    tx_name    <- dual_key(tx$transcript_name,
+                           tx$transcript_id, tx$transcript_id_version)
 
     # Gene strand, which the sense/antisense split of intronic novel models needs.
     # gffcompare's i code covers both orientations and they are not the same
@@ -222,10 +222,10 @@ read_reference_gtf <- function(path) {
     # antisense one cannot be explained that way at all. Every transcript of a gene
     # shares the gene's strand, so the first occurrence per gene is the gene's.
     gene_strand <- dual_key(tx$strand,
-                            tx$ensembl_gene_id, tx$ensembl_gene_id_version)
+                            tx$gene_id, tx$gene_id_version)
 
     cat(sprintf("  %d transcripts, %d exons, %d genes\n",
-                nrow(tx), nrow(exons), length(unique(tx$ensembl_gene_id))))
+                nrow(tx), nrow(exons), length(unique(tx$gene_id))))
 
     list(tx = tx, exons = exons,
          gene_biotype = gene_biotype, gene_name = gene_name, gene_strand = gene_strand,
@@ -234,10 +234,10 @@ read_reference_gtf <- function(path) {
 
 #' Count distinct exons per transcript, keyed on the versioned transcript id.
 exon_counts_per_transcript <- function(exons) {
-    counts <- tapply(exons$ensembl_exon_id, exons$ensembl_transcript_id_version,
+    counts <- tapply(exons$exon_id, exons$transcript_id_version,
                      function(x) length(unique(x)))
     data.frame(
-        ensembl_transcript_id_version = names(counts),
+        transcript_id_version = names(counts),
         num_exons                     = as.integer(counts),
         stringsAsFactors              = FALSE
     )

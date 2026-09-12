@@ -25,14 +25,6 @@ input:
       type: file
       description: Validated annotation GTF, staged under `input/` so the script can write its result under the same basename.
       pattern: "BambuOutput_annotations_validated.gtf"
-  - fulllength_gtf:
-      type: file
-      description: Validated full-length transcript GTF, staged under `input/`.
-      pattern: "BambuOutput_fullLength_validated.gtf"
-  - unique_gtf:
-      type: file
-      description: Validated uniquely-mapped transcript GTF, staged under `input/`.
-      pattern: "BambuOutput_uniquelyMapped_validated.gtf"
   - known_metadata:
       type: file
       description: Metadata for the reference-matching transcripts.
@@ -55,18 +47,6 @@ input:
       pattern: "gtf_annotation_utils.R"
 
 output:
-  - annotations_validated_gtf:
-      type: file
-      description: Validated annotation with biotype and classification attributes attached.
-      pattern: "BambuOutput_annotations_validated.gtf"
-  - fullLength_validated_gtf:
-      type: file
-      description: Validated full-length transcripts, enriched the same way.
-      pattern: "BambuOutput_fullLength_validated.gtf"
-  - uniquelyMapped_validated_gtf:
-      type: file
-      description: Validated uniquely-mapped transcripts, enriched the same way.
-      pattern: "BambuOutput_uniquelyMapped_validated.gtf"
   - final_gtf:
       type: file
       description: >-
