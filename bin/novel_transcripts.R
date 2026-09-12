@@ -145,7 +145,7 @@ read_coding_predictions <- function(path) {
 rnam <- read_coding_predictions(opt$coding_predictions)
 
 # Select relevant information from gtf
-tx_table <- dplyr::select(tx_table, seqnames, transcript_id, gene_name, start, end, strand)
+tx_table <- dplyr::select(tx_table, seqnames, transcript_id, start, end, strand)
 
 # Complete info dataframe
 cat("Merging data...\n")
@@ -153,9 +153,10 @@ tx_info <- merge(tmap, tx_table, by.x="qry_id", by.y="transcript_id", all.x=TRUE
 
 # Attach the coding-potential calls
 tx_info <- merge(tx_info, rnam, by.x="qry_id", by.y="transcript_id", all.x=TRUE)
-
-# Select relevant info and reorder columns
-tx_info <- dplyr::select(tx_info, seqnames, qry_id, ref_id, qry_gene_id, ref_gene_id, gene_name, 
+tx_info$qry_gene_name    <- unname(ref_gene_name[tx_info$qry_gene_id])
+tx_info$qry_gene_biotype <- unname(ref_gene_biotype[tx_info$qry_gene_id])
+tx_info <- dplyr::select(tx_info, seqnames, qry_id, ref_id,
+                  qry_gene_id, qry_gene_name, qry_gene_biotype, ref_gene_id,
                   class_code, strand, start, end, len, num_exons, prediction, coding_prob,
                   coding_predictor)
 
@@ -326,7 +327,8 @@ novel_attrs <- function(meta) {
         compared_transcript_id      = as.character(meta$compared_transcript_id),
         compared_transcript_name    = as.character(meta$compared_transcript_name),
         compared_transcript_biotype = as.character(meta$compared_transcript_biotype),
-        gene_name                   = as.character(meta$gene_name)
+        gene_name                   = as.character(meta$qry_gene_name),
+        qry_gene_biotype            = as.character(meta$qry_gene_biotype)
     )
 }
 #' Subset the Bambu GTF to a set of transcripts, attach the novel attributes and
