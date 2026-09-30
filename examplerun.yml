@@ -142,19 +142,3 @@ annotation: "/your/path/to/references/annotation.release.chr.gtf"
 # Pin it when comparing runs, since a shifting NDR makes before/after comparisons
 # meaningless.
 ndr: null            # e.g. 0.2
-
-# ------------------------------------------------------------------------------
-#  Coding potential prediction
-# ------------------------------------------------------------------------------
-# Which tool decides whether a novel transcript is coding or non-coding. That call
-# is the routing key for the novel lncRNA and novel protein-coding categories, so it
-# determines what the pipeline's main output contains.
-#
-#   cpc2       default. No organism needed.
-#   rnamining  requires `organism` below. 
-coding_potential_pred: "cpc2"
-
-# Scientific name of the organism, e.g. "Mus_musculus". Only used by RNAmining,
-# which selects a per-organism model and has no usable default -- the run stops if
-# you choose rnamining without it. Ignored by CPC2, which warns and continues.
-organism: null

@@ -143,7 +143,6 @@ workflow PULPOSEQ {
             params.annotation,
             params.reference
         )
-        ch_versions = ch_versions.mix(CLASSIFICATION.out.versions)
 
         FILTER_BAMBU_COUNTS (
             ASSEMBLY.out.gene_counts,

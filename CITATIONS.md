@@ -26,9 +26,6 @@
 - [CPC2](https://doi.org/10.1093/nar/gkx428)
   > Kang YJ, Yang DC, Kong L, Hou M, Meng YQ, Wei L, Gao G. CPC2: a fast and accurate coding potential calculator based on sequence intrinsic features. Nucleic Acids Res. 2017 Jul 3;45(W1):W12-W16. doi: 10.1093/nar/gkx428. PMID: 28521017; PMCID: PMC5793834.
 
-- [RNAmining](https://doi.org/10.12688/f1000research.52350.2)
-  > Ramos TAR, Galindo NRO, Arias-Carrasco R, da Silva CF, Maracaja-Coutinho V, do Rêgo TG. RNAmining: A machine learning stand-alone and web server tool for RNA coding potential prediction. F1000Res. 2021 Apr 26;10:323. doi: 10.12688/f1000research.52350.2. PMID: 34164114; PMCID: PMC8201426.
-
 - [Restrander](https://doi.org/10.1093/bioadv/vbae120)
   > Sheng M, Kim JJ, Milevskiy MJG, Ritchie ME, Amann-Zalcenstein D, Bowden R, Su S. Restrander: rapid orientation and artefact removal for long-read cDNA data. Bioinform Adv. 2024 Aug 21;4(1):vbae120. doi: 10.1093/bioadv/vbae120. PMID: 39281359; PMCID: PMC11401300.
 

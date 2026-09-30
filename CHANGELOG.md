@@ -14,3 +14,7 @@ Initial release of integrativebioinformatics/pulposeq, created with the [nf-core
 ### `Dependencies`
 
 ### `Deprecated`
+
+### `Removed`
+
+- RNAmining coding-potential predictor, together with the `coding_potential_pred` and `organism` parameters. CPC2 is now the only coding-potential predictor.

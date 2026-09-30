@@ -377,24 +377,14 @@ Class_codes description figure below retrieved from the official [documentation]
 
 ## `coding_potential/` (coding potential prediction for novel transcripts)
 
-Contents depend on which predictor `coding_potential_pred` selected. Whichever ran,
-the call it produced is recorded per transcript in the novel metadata as
-`prediction`, with `coding_prob` holding P(coding) and `coding_predictor` naming the
-tool — normalised across the two, since they report different quantities natively.
-
-With `cpc2` (default):
+Coding potential is predicted by CPC2. The call it produced is recorded per
+transcript in the novel metadata as `prediction`, with `coding_prob` holding
+P(coding) and `coding_predictor` naming the tool. The features CPC2 based the call
+on follow as `peptide_length`, `Fickett_score`, `pI` and `ORF_integrity`.
 
 | File | Description |
 |------------------|------------------------------------------------------|
 | `*.txt` | CPC2 table: one row per novel isoform candidate, with transcript and peptide length, Fickett score, isoelectric point, ORF integrity, coding probability and label. |
-
-With `rnamining`:
-
-| File | Description |
-|------------------|------------------------------------------------------|
-| `codings.txt` | Novel isoform candidates predicted as protein-coding, as FASTA. |
-| `noncodings.txt` | Novel isoform candidates predicted as non-coding, as FASTA. |
-| `predictions.txt` | Full RNAmining prediction output for all evaluated candidates. |
 
 ## `novel_transcripts/` and `ref_transcripts/` (metadata handling)
 

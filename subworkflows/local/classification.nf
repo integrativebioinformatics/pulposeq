@@ -5,11 +5,6 @@ include { GFFCOMPARE } from '../../modules/nf-core/gffcompare/main'
 include { GFFREAD    } from '../../modules/nf-core/gffread/main'
 include { CPC2       } from '../../modules/nf-core/cpc2/main'
 
-//
-// MODULE: Local to the pipeline
-//
-include { RNAMINING  } from '../../modules/local/rnamining/main'
-
 /*
 ========================================================================================
     RUN CLASSIFICATION WORKFLOW
@@ -23,8 +18,6 @@ workflow CLASSIFICATION {
     reference   // path/string: reference genome FASTA (params.reference)
 
     main:
-    ch_versions = channel.empty()
-
     //
     // Prepare inputs for nf-core/gffcompare
     // nf-core module expects: tuple(meta, gtfs), tuple(meta2, fasta, fai), tuple(meta3, reference_gtf)
@@ -62,34 +55,21 @@ workflow CLASSIFICATION {
     ch_gffread_fasta = GFFREAD.out.gffread_fasta.map { _meta, f -> f }
 
     //
-    // Coding potential prediction, from whichever predictor params.coding_potential_pred
-    // names. Both write a table of one row per transcript with a coding/non-coding call;
-    // novel_transcripts.R reads either, keying on the header rather than on column
-    // position.
+    // Coding potential prediction with CPC2: a table of one row per transcript with a
+    // coding/non-coding call. novel_transcripts.R keys on its header rather than on
+    // column position.
     //
-    // CPC2 is the default. 
-    //
-    if (params.coding_potential_pred == 'rnamining') {
-        RNAMINING(
-            ch_gffread_fasta
-        )
-        ch_predictions = RNAMINING.out.preds
-        ch_versions    = ch_versions.mix(RNAMINING.out.versions)
-    }
-    else {
-        // CPC2 keeps the meta map, where RNAMINING took a bare path.
-        CPC2(
-            GFFREAD.out.gffread_fasta
-        )
-        ch_predictions = CPC2.out.txt.map { _meta, f -> f }
-        // Versions reach the pipeline through the `versions` topic channel rather than
-        // a versions.yml emit, so there is nothing to mix in here.
-    }
+    CPC2(
+        GFFREAD.out.gffread_fasta
+    )
+    ch_predictions = CPC2.out.txt.map { _meta, f -> f }
+
+    // GFFCOMPARE, GFFREAD and CPC2 all report versions through the `versions` topic
+    // channel rather than a versions.yml emit, so this subworkflow emits none.
 
     emit:
     annotated_gtf = ch_annotated_gtf
     tmap          = ch_tmap
     gffread_fasta = ch_gffread_fasta
     predictions   = ch_predictions
-    versions      = ch_versions
 }

@@ -7,7 +7,7 @@ For more details and further functionality, please refer to the [usage](docs/usa
 
 **The workflow**
 
-![pulposeq workflow](figures/pulposeq.drawio.svg)
+![pulposeq workflow](figures/pulposeq.drawio.png)
 
 We can describe each step of the workflow as follows:
 
@@ -20,7 +20,7 @@ We can describe each step of the workflow as follows:
 7.  Transcriptome Assembly ([Bambu](https://www.bioconductor.org/packages/release/bioc/html/bambu.html))
 8.  Compare novel transcripts to the annotation reference ([GffCompare](https://github.com/gpertea/gffcompare "gpertea/gffcompare"))
 9.  Convert novel transcripts `GTF` file to `FASTA` ([GffRead](https://github.com/gpertea/gffread "gpertea/gffread"))
-10. Predict transcripts as protein-coding or non-coding ([CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone") by default, or [RNAmining](https://gitlab.com/integrativebioinformatics/RNAmining "integrativebioinformatics/RNAmining"))
+10. Predict transcripts as protein-coding or non-coding ([CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone"))
 11. Gather all data from previous steps and generate informative and re-usable metadata `.csv` and `GTF` files for both novel and annotated transcripts, with biotypes read directly from the supplied reference annotation ([tidyverse](https://tidyverse.org/), [rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html), and [GenomicRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html))
 12. Restrict the count matrices and `GTF` files to the curated set, and attach biotype and classification attributes to the validated annotations
 13. Regenerate Bambu's PCA and expression heatmaps from the curated transcriptome, so the sample-level view can be read beside the one built from the raw assembly
@@ -32,11 +32,7 @@ We can describe each step of the workflow as follows:
 
 pulposeq is compatible with **Ensembl or GENCODE** reference genomes and annotations. Transcript and gene biotypes are read directly from the annotation you supply, so no Ensembl release or BioMart dataset needs to be declared.
 
-Coding potential is predicted with [CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone") by default, which is organism-agnostic — so **the pipeline is no longer restricted to a fixed species list**. Any eukaryote with an Ensembl or GENCODE annotation is in scope; splice-aware alignment and the intron-based gffcompare class codes are what make the eukaryotic assumption, not the predictor.
-
-[RNAmining](https://gitlab.com/integrativebioinformatics/RNAmining "integrativebioinformatics/RNAmining") remains selectable with `coding_potential_pred: "rnamining"`, and then requires an `organism` from its supported list:
-
-> *Homo sapiens, Mus musculus, Danio rerio, Anolis carolinensis, Chrysemys picta bellii, Crocodylus porosus, Eptatretus burgeri, Gallus gallus, Latimeria chalumnae, Monodelphis domestica, Notechis scutatus, Ornithorhynchus anatinus, Petromyzon marinus, Rattus norvegicus, Sphenodon punctatus,* and *Xenopus tropicalis.*
+Coding potential is predicted with [CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone"), which is organism-agnostic — so **the pipeline is not restricted to a fixed species list**. Any eukaryote with an Ensembl or GENCODE annotation is in scope; splice-aware alignment and the intron-based gffcompare class codes are what make the eukaryotic assumption, not the predictor.
 
 See [Coding potential](docs/usage.md#coding-potential).
 

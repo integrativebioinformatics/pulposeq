@@ -233,23 +233,6 @@ def validateInputParameters() {
             log.warn("--library ${params.library} is always stranded; --stranded_library false will be ignored.")
         }
 
-        // Coding potential predictor. RNAmining carries a per-organism model and needs
-        // to be told which, where CPC2 does not.
-        def valid_predictors = ['cpc2', 'rnamining']
-        if (!(params.coding_potential_pred in valid_predictors)) {
-            error("--coding_potential_pred '${params.coding_potential_pred}' is not valid. Valid values: ${valid_predictors.join(', ')}")
-        }
-        if (params.coding_potential_pred == 'rnamining' && !params.organism) {
-            error(
-                "--organism must be provided when --coding_potential_pred rnamining. " +
-                "RNAmining selects a per-organism model and has no usable default.\n" +
-                "Supply --organism, or use the default --coding_potential_pred cpc2, which needs none."
-            )
-        }
-        if (params.coding_potential_pred == 'cpc2' && params.organism) {
-            log.warn("--organism is only used by RNAmining and will be ignored with --coding_potential_pred cpc2.")
-        }
-
         // splice:hq is `splice` with -C5 -O6,24 -B4: it trusts the read, treating a
         // discrepancy as real biology rather than basecalling error. -k14 exists for
         // the opposite reason, so the two cannot both be right about the same data.

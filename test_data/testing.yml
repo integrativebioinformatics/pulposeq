@@ -44,10 +44,3 @@ stranded_library: true
 # ------------------------------------------------------------------------------
 reference: "/full/path/to/pulposeq/test_data/references/Homo_sapiens.GRCh38.dna.chromosome.1.fa"
 annotation: "/full/path/to/pulposeq/test_data/references/Homo_sapiens.GRCh38.116.chr1.gtf"
-
-# ------------------------------------------------------------------------------
-#  Coding potential prediction
-# ------------------------------------------------------------------------------
-# CPC2 needs no organism. To run the RNAmining path instead, set
-# coding_potential_pred: "rnamining" and organism: "Homo_sapiens".
-coding_potential_pred: "cpc2"

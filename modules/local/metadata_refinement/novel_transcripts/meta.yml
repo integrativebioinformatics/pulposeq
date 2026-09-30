@@ -1,5 +1,5 @@
 name: "novel_transcripts"
-description: Classify and annotate novel transcripts identified by Bambu using GFFcompare classification codes and RNAmining coding potential predictions.
+description: Classify and annotate novel transcripts identified by Bambu using GFFcompare classification codes and CPC2 coding potential predictions.
 keywords:
   - novel-transcripts
   - lncRNA
@@ -32,7 +32,7 @@ input:
       pattern: "*.tmap"
   - coding_predictions:
       type: file
-      description: RNAMINING prediction file with ID, prediction and score TSV columns, preceded by the tool header.
+      description: CPC2 prediction table, tab-separated with a "#ID" header line; ID, label, coding_probability, peptide_length, Fickett_score, pI and ORF_integrity columns are required.
       pattern: "*.txt"
   - tx_counts:
       type: file

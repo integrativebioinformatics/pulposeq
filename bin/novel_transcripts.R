@@ -23,7 +23,7 @@ option_list <- list(
     make_option(c("--tmap_file"), type="character", default=NULL,
                 help="Path to tmap results file", metavar="character"),
     make_option(c("--coding_predictions"), type="character", default=NULL,
-                help="Path to the coding-potential table (CPC2 or RNAmining)", metavar="character"),
+                help="Path to the CPC2 coding-potential table", metavar="character"),
     make_option(c("--tx_counts"), type="character", default=NULL,
                 help="Path to transcript counts file", metavar="character"),
     make_option(c("--gene_counts"), type="character", default=NULL,
@@ -69,80 +69,63 @@ tmap <- read_table(opt$tmap_file)
 
 cat("Loading coding-potential predictions...\n")
 
-#' Read a coding-potential table from either predictor.
+#' Read the CPC2 coding-potential table.
 #'
-#' The two formats differ in more than layout. RNAmining writes a preamble and then
-#' <id> <coding|non-coding> <score>, where the score is the probability of whichever
-#' class it chose. CPC2 writes a "#ID" header with eight tab-separated columns,
-#' spells the label "noncoding" without the hyphen, and its coding_probability is
-#' the probability of CODING specifically -- so a non-coding row carries a low value
-#' where RNAmining carries a high one. Passing either straight through would put two
-#' different quantities in the same column.
+#' CPC2 writes a "#ID" header with tab-separated columns, spells the label
+#' "noncoding" without the hyphen, and its coding_probability is the probability of
+#' CODING specifically, whichever label the row carries.
 #'
-#' Both are normalised here: prediction in {coding, non-coding}, and coding_prob as
-#' P(coding) whichever tool produced it. CPC2 columns are located by header name
-#' rather than position, because it inserts ORF_Start when run with --ORF.
+#' Normalised here to prediction in {coding, non-coding} and coding_prob as
+#' P(coding). The features CPC2 based that call on -- peptide_length,
+#' Fickett_score, pI and ORF_integrity -- are carried through under CPC2's own
+#' names, so a call can be read against its evidence. transcript_length is dropped
+#' as it duplicates gffcompare's len. Columns are located by header name rather
+#' than position, because CPC2 inserts ORF_Start when run with --ORF.
 read_coding_predictions <- function(path) {
     lines <- readLines(path)
     hdr   <- grep("^#ID\t", lines)
-
-    if (length(hdr)) {
-        cols <- strsplit(sub("^#", "", lines[hdr[1]]), "\t", fixed = TRUE)[[1]]
-        body <- lines[seq.int(hdr[1] + 1L, length(lines))]
-        body <- body[nzchar(body)]
-        if (!length(body)) {
-            stop("CPC2 table ", path, " has a header but no rows.", call. = FALSE)
-        }
-
-        d <- read.table(text = body, sep = "\t", header = FALSE, quote = "",
-                        comment.char = "", stringsAsFactors = FALSE)
-        if (ncol(d) != length(cols)) {
-            stop("CPC2 table ", path, " has ", ncol(d), " columns against a ",
-                 length(cols), "-column header.", call. = FALSE)
-        }
-        names(d) <- cols
-
-        missing <- setdiff(c("ID", "label", "coding_probability"), names(d))
-        if (length(missing)) {
-            stop("CPC2 table ", path, " is missing column(s): ",
-                 paste(missing, collapse = ", "), ". Found: ",
-                 paste(names(d), collapse = ", "), call. = FALSE)
-        }
-
-        cat(sprintf("Read %d CPC2 predictions\n", nrow(d)))
-        return(data.frame(
-            transcript_id    = as.character(d$ID),
-            prediction       = ifelse(d$label == "coding", "coding", "non-coding"),
-            coding_prob      = as.numeric(d$coding_probability),
-            coding_predictor = "cpc2",
-            stringsAsFactors = FALSE))
+    if (!length(hdr)) {
+        stop("No CPC2 header found in ", path, ". Expected a table starting with ",
+             "a #ID header line.", call. = FALSE)
     }
 
-    # RNAmining. The preamble line count has changed between versions, and skipping a
-    # fixed number silently drops one transcript's call whenever that count is wrong,
-    # so the body is identified by matching it instead.
-    is_data <- grepl("^[^#[:space:]][^\t]*\t(coding|non-coding)\t", lines)
-    if (!any(is_data)) {
-        stop("No prediction rows found in ", path, ". Expected either a CPC2 table ",
-             "with a #ID header, or RNAmining <id> <coding|non-coding> <score> lines.",
-             call. = FALSE)
+    cols <- strsplit(sub("^#", "", lines[hdr[1]]), "\t", fixed = TRUE)[[1]]
+    body <- lines[seq.int(hdr[1] + 1L, length(lines))]
+    body <- body[nzchar(body)]
+    if (!length(body)) {
+        stop("CPC2 table ", path, " has a header but no rows.", call. = FALSE)
     }
 
-    d <- read.table(text = lines[is_data], header = FALSE, sep = "\t",
-                    stringsAsFactors = FALSE)
-    colnames(d) <- c("transcript_id", "prediction", "score")
+    d <- read.table(text = body, sep = "\t", header = FALSE, quote = "",
+                    comment.char = "", stringsAsFactors = FALSE)
+    if (ncol(d) != length(cols)) {
+        stop("CPC2 table ", path, " has ", ncol(d), " columns against a ",
+             length(cols), "-column header.", call. = FALSE)
+    }
+    names(d) <- cols
 
-    cat(sprintf("Read %d RNAmining predictions (%d preamble lines skipped)\n",
-                nrow(d), sum(!is_data)))
+    missing <- setdiff(c("ID", "label", "coding_probability", "peptide_length",
+                         "Fickett_score", "pI", "ORF_integrity"), names(d))
+    if (length(missing)) {
+        stop("CPC2 table ", path, " is missing column(s): ",
+             paste(missing, collapse = ", "), ". Found: ",
+             paste(names(d), collapse = ", "), call. = FALSE)
+    }
+
+    cat(sprintf("Read %d CPC2 predictions\n", nrow(d)))
     data.frame(
-        transcript_id    = as.character(d$transcript_id),
-        prediction       = as.character(d$prediction),
-        coding_prob      = ifelse(d$prediction == "coding", d$score, 1 - d$score),
-        coding_predictor = "rnamining",
+        transcript_id    = as.character(d$ID),
+        prediction       = ifelse(d$label == "coding", "coding", "non-coding"),
+        coding_prob      = as.numeric(d$coding_probability),
+        coding_predictor = "cpc2",
+        peptide_length   = as.integer(d$peptide_length),
+        Fickett_score    = as.numeric(d$Fickett_score),
+        pI               = as.numeric(d$pI),
+        ORF_integrity    = as.integer(d$ORF_integrity),
         stringsAsFactors = FALSE)
 }
 
-rnam <- read_coding_predictions(opt$coding_predictions)
+coding_preds <- read_coding_predictions(opt$coding_predictions)
 
 # Select relevant information from gtf
 tx_table <- dplyr::select(tx_table, seqnames, transcript_id, start, end, strand)
@@ -152,13 +135,13 @@ cat("Merging data...\n")
 tx_info <- merge(tmap, tx_table, by.x="qry_id", by.y="transcript_id", all.x=TRUE)
 
 # Attach the coding-potential calls
-tx_info <- merge(tx_info, rnam, by.x="qry_id", by.y="transcript_id", all.x=TRUE)
+tx_info <- merge(tx_info, coding_preds, by.x="qry_id", by.y="transcript_id", all.x=TRUE)
 tx_info$qry_gene_name    <- unname(ref_gene_name[tx_info$qry_gene_id])
 tx_info$qry_gene_biotype <- unname(ref_gene_biotype[tx_info$qry_gene_id])
 tx_info <- dplyr::select(tx_info, seqnames, qry_id, ref_id,
                   qry_gene_id, qry_gene_name, qry_gene_biotype, ref_gene_id,
                   class_code, strand, start, end, len, num_exons, prediction, coding_prob,
-                  coding_predictor)
+                  coding_predictor, peptide_length, Fickett_score, pI, ORF_integrity)
 
 # Remove unstranded transcripts
 tx_info <- tx_info[tx_info$strand != "*", ]
