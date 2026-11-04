@@ -7,7 +7,7 @@ For more details and further functionality, please refer to the [usage](docs/usa
 
 **The workflow**
 
-![pulposeq workflow](figures/pulposeq.drawio.png)
+![pulposeq workflow](figures/pulposeq.extended.png)
 
 We can describe each step of the workflow as follows:
 
