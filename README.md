@@ -178,8 +178,5 @@ Bárbara Borges<sup>1,2,3</sup>, Izabela Mamede<sup>4,5</sup>, Lucas Freitas<sup
 
 *Co-corresponding authors*
 
-<p align="center">
-
-<picture> <source media="(prefers-color-scheme: dark)" srcset="figures/institutional-logos-dark-theme.png" height=150> <img src="figures/institutional-logos-light.png" height="150"/> </picture>
-
-</p>
+![Institutional logos - dark theme](figures/institutional-logos-dark-theme.png#gh-dark-mode-only)
+![Institutional logos - light theme](figures/institutional-logos-light.png#gh-light-mode-only)
