@@ -148,7 +148,9 @@ CAPES (001), CNPq (MCTI/FNDCT 445067/2024-1), FONDECYT-ANID Postdoctorado (32504
 
 #### Laboratories & Institutions Involved
 
-Bárbara Borges<sup>1,2,3</sup>, Izabela Mamede<sup>4,5</sup>, Lucas Freitas<sup>4,5</sup>, Sebastian Urquiza-Zurich<sup>6,7</sup>, Joyce Karoline Silva<sup>3,8,9</sup>, Samuel Ismael<sup>1</sup>, Gleison Azevedo<sup>1</sup>, João Vitor Cavalcante<sup>1</sup>, Rodrigo JS Dalmolin<sup>1</sup>, Thaís Gaudencio do Rêgo<sup>1,2</sup>, Vinicius Maracaja-Coutinho<sup>1,3,8,10</sup>
+Bárbara Borges<sup>1,2,3</sup>, Izabela Mamede<sup>4,5</sup>, Lucas Freitas<sup>4,5</sup>, Sebastian Urquiza-Zurich<sup>6,7</sup>, Joyce Karoline Silva<sup>3,8,9</sup>, Samuel Ismael<sup>1</sup>, Gleison Azevedo<sup>1</sup>, João Vitor Cavalcante<sup>1</sup>, Rodrigo JS Dalmolin<sup>1</sup>, Thaís Gaudencio do Rêgo<sup>1,2\*</sup>, Vinicius Maracaja-Coutinho<sup>1,3,8,10\*</sup>
+
+<sup>\*</sup> Co-corresponding authors
 
 <details>
 
@@ -175,8 +177,6 @@ Bárbara Borges<sup>1,2,3</sup>, Izabela Mamede<sup>4,5</sup>, Lucas Freitas<sup
 <sup>10</sup> Instituto Nacional de Ciência e Tecnologia em Saúde Digital - INCT-DigiSaúde
 
 </details>
-
-*Co-corresponding authors*
 
 ![Institutional logos - dark theme](figures/institutional-logos-dark-theme.png#gh-dark-mode-only)
 ![Institutional logos - light theme](figures/institutional-logos-light.png#gh-light-mode-only)
