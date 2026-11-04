@@ -146,27 +146,37 @@ CAPES (001), CNPq (MCTI/FNDCT 445067/2024-1), FONDECYT-ANID Postdoctorado (32504
 
 #### Laboratories & Institutions Involved
 
-Bárbara Borges <sup>1,2,3</sup>, Lucas Freitas <sup>4,5</sup>, Gleison Azevedo <sup>1</sup>, João Cavalcante <sup>1</sup>, Rodrigo Dalmolin <sup>1</sup>, Thaís Gaudencio <sup>1,3</sup>, Vinicius Maracaja-Coutinho <sup>1,2,6,7</sup>
+#### Laboratories & Institutions Involved
+
+Bárbara Borges<sup>1,2,3</sup>, Izabela Mamede<sup>4,5</sup>, Lucas Freitas<sup>4,5</sup>, Sebastian Urquiza-Zurich<sup>6,7</sup>, Joyce Karoline Silva<sup>3,8,9</sup>, Samuel Ismael<sup>1</sup>, Gleison Azevedo<sup>1</sup>, João Vitor Cavalcante<sup>1</sup>, Rodrigo JS Dalmolin<sup>1</sup>, Thaís Gaudencio do Rêgo<sup>1,2</sup>, Vinicius Maracaja-Coutinho<sup>1,3,8,10</sup>
 
 <details>
 
 <summary>Affiliations</summary>
 
-<sup>1</sup> Bioinformatics Multidisciplinary Environment, Instituto Metrópole Digital, Universidade Federal do Rio Grande do Norte, Natal, Brazil
+<sup>1</sup> Bioinformatics Multidisciplinary Environment - BioME, Universidade Federal do Rio Grande do Norte, Natal, Brazil;
 
-<sup>2</sup> Unidad de Genómica Avanzada, Advanced Center for Chronic Diseases, Facultad de Ciencias Químicas y Farmacéuticas, Universidad de Chile, Santiago, Chile
+<sup>2</sup> Artificial Intelligence Applications - ARIA, Universidade Federal da Paraíba, João Pessoa, Brazil;
 
-<sup>3</sup> Artificial Intelligence Applications, Universidade Federal da Paraíba, João Pessoa, Brazil
+<sup>3</sup> Unidad de Genómica Avanzada & Advanced Center for Chronic Diseases, Facultad de Ciencias Químicas y Farmacéuticas, Universidad de Chile;
 
-<sup>4</sup> Faculty of Natural Sciences, Universität Hohenheim, Stuttgart, Germany
+<sup>4</sup> Instituto Nacional do Câncer;
 
-<sup>5</sup> Staatliches Museum für Naturkunde Stuttgart, Department of Biodiversity Monitoring, Stuttgart, Germany
+<sup>5</sup> Computational Systems Biology Laboratory, Universidade de São Paulo;
 
-<sup>6</sup> Laboratório de Medicina e Saúde Pública de Precisão, Instituto Gonçalo Moniz, Fundação Oswaldo Cruz, Fiocruz, Salvador, Brazil
+<sup>6</sup> Faculty of Natural Sciences, Universität Hohenheim;
 
-<sup>7</sup> Instituto Nacional de Ciência e Tecnologia em Saúde Digital (INCT-DigiSaúde)
+<sup>7</sup> Natural History Museum Stuttgart;
+
+<sup>8</sup> Laboratório de Medicina e Saúde Pública de Precisão - MESP2, Fundação Oswaldo Cruz;
+
+<sup>9</sup> Programa de Pós Graduação em Ciências da Saúde - PPGCS, Universidade Federal da Bahia;
+
+<sup>10</sup> Instituto Nacional de Ciência e Tecnologia em Saúde Digital - INCT-DigiSaúde
 
 </details>
+
+*Co-corresponding authors*
 
 <p align="center">
 
