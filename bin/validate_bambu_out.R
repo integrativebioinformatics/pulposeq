@@ -102,10 +102,10 @@ seGene_filtered <- subset_se(seGene, valid_gene_ids, "gene")
 # --- Identify the expressed features ----------------------------------------
 # Bambu quantifies against the extended annotation, so the raw objects carry a
 # row for every reference feature, including those with no reads in any sample.
-# Those rows are dropped by the zero-count filter in filter_bambu_counts.sh, so
-# measuring the yield against them would count the reference itself as a loss.
-# The denominator below is the same set that filter keeps: features with at
-# least one count in at least one sample.
+# Measuring the yield against those rows would count the reference itself as a
+# loss, so the denominator below is every feature with at least one count in at
+# least one sample. It is deliberately looser than PREFILTER's --min_total_counts
+# rule, so the recovery figure also shows what that expression filter removed.
 expressed_rows <- function(object, label) {
   assay_names <- SummarizedExperiment::assayNames(object)
   if (length(assay_names) == 0) {

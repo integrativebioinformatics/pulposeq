@@ -143,8 +143,8 @@ tx_info <- dplyr::select(tx_info, seqnames, qry_id, ref_id,
                   class_code, strand, start, end, len, num_exons, prediction, coding_prob,
                   coding_predictor, peptide_length, Fickett_score, pI, ORF_integrity)
 
-# Remove unstranded transcripts
-tx_info <- tx_info[tx_info$strand != "*", ]
+# Unstranded models never reach this script: PREFILTER (bin/prefilter_transcripts.R)
+# removes them before classification.
 
 tx_info$exon <- ifelse(tx_info$num_exons == 1, 'mono-exonic', 'multi-exonic')
 
@@ -229,13 +229,12 @@ if (!is.null(opt$tx_classes) && file.exists(opt$tx_classes)) {
     cat("No Bambu transcript classes supplied; BambuTxClass will be NA throughout.\n")
 }
 
-# Load counts
-cat("Filtering transcripts with zero counts...\n")
+# Load counts. These are PREFILTER's tables, so every model here already passed the
+# expression rule (--min_total_counts); they are read only to write the novel-only
+# count tables below.
+cat("Loading counts...\n")
 tx_counts <- read_table(opt$tx_counts)
 gene_counts <- read_table(opt$gene_counts)
-
-# Remove novel transcripts that had 0 transcript counts in all samples
-tx_info <- tx_info[tx_info$qry_id %in% tx_counts$TXNAME, ]
 
 #' Human-readable label for a gffcompare class code. Kept in one place because
 #' three outputs need the same mapping and copies of it drifted apart.
@@ -383,11 +382,10 @@ biotype[related & is_noncod & is_lnc_ref]    <- "novel_lncRNA"
 biotype[related & is_noncod & !is_lnc_ref]   <- "novel_non_coding"
 tx_info$pulposeq_transcript_biotype <- biotype
 
-# The 500 nt floor is the consensus lower bound for a long non-coding RNA. Applied
-# to every candidate rather than only the lncRNA branch, so the three categories
-# stay comparable to one another.
+# The 500 nt floor (the consensus lower bound for a long non-coding RNA) is applied
+# upstream by PREFILTER, to every novel candidate, so the three categories stay
+# comparable to one another. Only class codes and biotypes are decided here.
 eligible <- tx_info[tx_info$class_code %in% CANDIDATE_CODES &
-                        tx_info$len >= 500 &
                         !is.na(tx_info$pulposeq_transcript_biotype), ]
 
 routed <- table(eligible$pulposeq_transcript_biotype)

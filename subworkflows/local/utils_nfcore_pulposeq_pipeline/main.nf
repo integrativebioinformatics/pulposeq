@@ -350,6 +350,11 @@ def validateInputParameters() {
             error("--ndr must be between 0 and 1, got: ${params.ndr}")
         }
     }
+
+    // The expression filter threshold is a count, so it cannot be negative
+    if (params.min_total_counts == null || (params.min_total_counts as double) < 0) {
+        error("--min_total_counts must be a number >= 0, got: ${params.min_total_counts}")
+    }
 }
 
 //

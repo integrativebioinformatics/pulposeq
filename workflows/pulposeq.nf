@@ -6,7 +6,7 @@
 
 include { MULTIQC                           } from '../modules/nf-core/multiqc/main'
 include { NOVEL_TRANSCRIPTS                 } from '../modules/local/metadata_refinement/novel_transcripts/main'
-include { FILTER_BAMBU_COUNTS               } from '../modules/local/metadata_refinement/filter_bambu_counts/main'
+include { PREFILTER                         } from '../modules/local/metadata_refinement/prefilter/main'
 include { VALIDATE_BAMBU_GTF                } from '../modules/local/metadata_refinement/validate_bambu_gtf/main'
 include { VALIDATE_BAMBU_COUNTS             } from '../modules/local/metadata_refinement/validate_bambu_counts/main'
 include { REF_TRANSCRIPTS                   } from '../modules/local/metadata_refinement/ref_transcripts/main'
@@ -131,10 +131,32 @@ workflow PULPOSEQ {
             params.annotation
         )
 
-        ASSEMBLY.out.gtf_new_transcripts
-            .set { ch_gtf_new_transcripts }
-
         ch_versions = ch_versions.mix(ASSEMBLY.out.versions)
+
+        //
+        // The one place transcripts are filtered. Runs whenever Bambu runs, before
+        // classification, so gffread, gffcompare, CPC2 and everything curated after
+        // them see the same transcript list. Unstranded and < 500 nt novel models are
+        // removed here, and any transcript below --min_total_counts summed across all
+        // samples. Bambu's raw output stays untouched.
+        //
+        PREFILTER (
+            ASSEMBLY.out.transcript_counts,
+            ASSEMBLY.out.gene_counts,
+            ASSEMBLY.out.CPM,
+            ASSEMBLY.out.full_length,
+            ASSEMBLY.out.unique_counts,
+            ASSEMBLY.out.gtf_new_transcripts,
+            'bambu',
+            [],
+            params.min_total_counts,
+            file("${projectDir}/bin/prefilter_transcripts.R", checkIfExists: true)
+        )
+        ch_versions = ch_versions.mix(PREFILTER.out.versions)
+
+        // Only the kept novel models go on to classification
+        PREFILTER.out.novel_gtf
+            .set { ch_gtf_new_transcripts }
     }
 
     if (run_classification) {
@@ -144,21 +166,13 @@ workflow PULPOSEQ {
             params.reference
         )
 
-        FILTER_BAMBU_COUNTS (
-            ASSEMBLY.out.gene_counts,
-            ASSEMBLY.out.transcript_counts,
-            ASSEMBLY.out.CPM,
-            ASSEMBLY.out.full_length,
-            ASSEMBLY.out.unique_counts
-        )
-
         NOVEL_TRANSCRIPTS (
             ch_gtf_new_transcripts,
             CLASSIFICATION.out.annotated_gtf,
             CLASSIFICATION.out.tmap,
             CLASSIFICATION.out.predictions,
-            FILTER_BAMBU_COUNTS.out.counts_transcript_filter,
-            FILTER_BAMBU_COUNTS.out.counts_gene_filter,
+            PREFILTER.out.counts_transcript_filter,
+            PREFILTER.out.counts_gene_filter,
             ASSEMBLY.out.bambu_tx_classes,
             params.annotation,
             file("${projectDir}/bin/novel_transcripts.R", checkIfExists: true),
@@ -168,11 +182,11 @@ workflow PULPOSEQ {
 
         VALIDATE_BAMBU_COUNTS (
             NOVEL_TRANSCRIPTS.out.novel_combined_metadata,
-            FILTER_BAMBU_COUNTS.out.counts_gene_filter,
-            FILTER_BAMBU_COUNTS.out.counts_transcript_filter,
-            FILTER_BAMBU_COUNTS.out.cpm_transcript_filter,
-            FILTER_BAMBU_COUNTS.out.full_length_counts_transcript_filter,
-            FILTER_BAMBU_COUNTS.out.unique_counts_transcript_filter
+            PREFILTER.out.counts_gene_filter,
+            PREFILTER.out.counts_transcript_filter,
+            PREFILTER.out.cpm_transcript_filter,
+            PREFILTER.out.full_length_counts_transcript_filter,
+            PREFILTER.out.unique_counts_transcript_filter
         )
 
         REF_TRANSCRIPTS (

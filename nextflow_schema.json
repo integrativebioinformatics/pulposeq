@@ -234,6 +234,13 @@
         "ndr": {
             "type": "number",
             "description": "Bambu Novel Discovery Rate (NDR) threshold for novel transcript classification."
+        },
+        "min_total_counts": {
+            "type": "number",
+            "default": 5,
+            "minimum": 0,
+            "description": "Keep a transcript only if its counts, summed across all samples, reach this value. Applied once, before classification, to reference and novel transcripts alike. A lenient detection filter: how the counts are spread between samples does not matter. It is not meant as a differential-expression filter, which depends on the study design and belongs in the user's own analysis.",
+            "fa_icon": "fas fa-filter"
         }
     }
 }

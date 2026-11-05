@@ -128,6 +128,7 @@ After seeting up the samplesheet, follow up to set the pipeline parameters.
 | `restrand_min_frac` | Minimum oriented fraction, per sample; below it the run stops (default `0.80`, minimum `0.5`) |
 | `skip_class` | Skip transcriptome characterization; `bambu` still runs (runs MultiQC, then finishes pipeline execution) |
 | `ndr` | Bambu's novel discovery rate. Leave unset for Bambu's own automatic choice (see [below](#novel-discovery-rate)) |
+| `min_total_counts` | Keep a transcript only if its counts, summed across all samples, reach this value (default `5`). Applies to reference and novel transcripts (see [below](#expression-filter)) |
 
 ### Choosing which NanoComp reports to run
 
@@ -181,6 +182,27 @@ never read without knowing the threshold behind it.
 A lower NDR admits fewer, better-supported novel models; a higher one admits more and
 shifts the burden onto the evidence reported per candidate. Neither is a default worth
 recommending sight-unseen — if you fix it, record why.
+
+### Expression filter {#expression-filter}
+
+Right after Bambu, and before classification, one step decides which transcripts the
+rest of the pipeline sees. A transcript is kept if its counts, **summed across all
+samples**, reach `min_total_counts` (default `5`). How the counts are spread between
+samples does not matter: 5 reads in one sample and none elsewhere passes. The same
+step also removes novel models without a strand and novel models shorter than 500 nt;
+those two rules never apply to reference transcripts. A gene is kept if at least one
+of its transcripts is kept.
+
+The default is deliberately lenient. It sits within the 2–5 read range long-read
+discovery tools use (Bambu requires 2 reads per read class, FLAIR 3 per isoform,
+TALON-based studies commonly 5), and it is meant to answer one question: is there any
+real evidence this transcript is expressed? It is **not** a differential-expression
+filter. That filtering depends on the study design and sequencing depth, so apply your
+own (for example edgeR's `filterByExpr`) to the output count tables before testing.
+
+Lowering `min_total_counts` keeps more lowly expressed transcripts, which matters most
+for novel lncRNAs; raising it keeps fewer. How many transcripts each rule removed is
+written to `bambu_filter/filter_summary.tsv`.
 
 ### Coding potential
 

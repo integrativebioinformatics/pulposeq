@@ -1241,7 +1241,7 @@ Following transcriptome assembly with **Bambu** [^1], the extended annotations a
 
 [^1]: Chen, Ying, et al. "Context-aware transcript quantification from long-read RNA-seq data with Bambu." Nature methods 20.8 (2023): 1187-1195. https://doi.org/10.1038/s41592-023-01908-w
 
-1.  Genes and transcripts with zero counts across all samples were removed, yielding filtered quantification files stored in the `bambu_filter/` results directory.
+1.  Transcripts were filtered once, before classification. Novel models without a strand or shorter than 500 nt were removed, and any transcript, reference or novel, with fewer than `--min_total_counts` counts summed across all samples (5 by default) was removed. Genes were kept if at least one of their transcripts was kept. The filtered quantification files and a per-rule summary (`filter_summary.tsv`) are stored in the `bambu_filter/` results directory.
 2.  Novel transcript isoforms were compared against the reference annotation using **GffCompare** [^2] and assessed for coding potential using **CPC2** [^3]. Isoforms were subsequently classified according to their GffCompare class code, coding-potential prediction, and the biotype of the associated reference gene.
 3.  Transcript structural features, including exon composition and transcript architecture, were characterized directly from the reference annotation and assembled GTF files using **rtracklayer** [^5].
 4.  Annotation files (GFT) and count matrices were restricted to the curated transcript set, and transcript classification and biotype information were incorporated into the final annotations.
@@ -1266,7 +1266,7 @@ A novel transcript is carried forward only if it meets **all** of the following:
 
 - **Length ≥ 500 nt:** the consensus lower bound for a long non-coding RNA, applied to every category so the three stay comparable to one another.
 - **A declared strand** (`+` or `-`): models Bambu could not orient are removed.
-- **Non-zero counts** in at least one sample.
+- **At least `--min_total_counts` counts summed across all samples** (5 by default). Reference transcripts are held to the same expression rule.
 - **An accepted gffcompare class code:** `u`, `i`, `x`, `j`, `k`, `o`, `y`, `m` or `n`.
 
 Nothing is filtered on structural evidence. Candidates carrying warning signs are reported with those signs attached, in [Tracking Evidence].

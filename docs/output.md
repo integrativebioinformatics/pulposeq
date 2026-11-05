@@ -240,18 +240,29 @@ Only produced for ONT cDNA libraries the pipeline orients itself, and skipped by
 | `seGene_multiSample.rds` | Serialized R object with gene-level summarized experiment data. |
 | `se_multiSample.rds` | Serialized R object with transcript-level summarized experiment data. |
 
-### Filtered count-matrices
+### Filtered count-matrices (`bambu_filter/`)
 
-> *Transcripts/genes from the extended reference annotations that have 0-counts in all samples are removed, keeping only annotated and novel features that were actually assembled and quantified by Bambu from the input dataset.*
+Transcripts are filtered **once**, right after Bambu and before classification, by the `PREFILTER` step. Every later step (gffread, gffcompare, CPC2, curation, figures and report) sees only the transcripts kept here. Three rules, applied in this order:
+
+1. **Unstranded novel models are removed.** Novel models only.
+2. **Novel models shorter than 500 nt are removed.** Novel models only. 500 nt is the consensus lower bound for a long non-coding RNA ([Mattick *et al.* 2023](https://doi.org/10.1038/s41580-022-00566-8)), applied to every novel candidate so the three novel categories stay comparable.
+3. **Any transcript, reference or novel, with fewer than `--min_total_counts` counts summed across all samples is removed** (default 5). How the counts are spread between samples does not matter.
+
+A gene is kept if at least one of its transcripts is kept.
+
+> [!NOTE]
+> The expression rule is a lenient **detection** filter: it asks whether there is any real evidence a transcript is expressed. It is not a differential-expression filter. A transcript seen in a single sample passes. Apply your own filtering, suited to your design (for example edgeR's `filterByExpr`), before differential expression.
 
 | File | Description |
 |--------------------------------|----------------------------------------|
-| `BambuOutput_counts_transcript_filtered.txt` | Filtered transcript-level raw count matrix. |
-| `BambuOutput_counts_gene_filtered.txt` | Filtered gene-level raw count matrix. |
-| `BambuOutput_CPM_transcript_filtered.txt` | Filtered transcript-level CPM-normalized expression matrix. |
-| `BambuOutput_fullLengthCounts_transcript_filtered.txt` | Filtered full-length transcript count matrix. |
-| `BambuOutput_fullLengthCounts_transcript_validated.txt` | Full-length transcript count matrix for validated features. |
-| `BambuOutput_uniqueCounts_transcript_filtered.txt` | Filtered uniquely mapped transcript count matrix. |
+| `BambuOutput_counts_transcript_filter.txt` | Transcript-level raw counts for the kept transcripts. |
+| `BambuOutput_counts_gene_filter.txt` | Gene-level raw counts for genes with at least one kept transcript. |
+| `BambuOutput_CPM_transcript_filter.txt` | Transcript-level CPM for the kept transcripts. |
+| `BambuOutput_fullLengthCounts_transcript_filter.txt` | Full-length read counts for kept transcripts with at least one full-length read. |
+| `BambuOutput_uniqueCounts_transcript_filter.txt` | Unique read counts for kept transcripts with at least one unique read. |
+| `bambu_novel_transcripts_prefiltered.gtf` | The kept novel models, lines unchanged from Bambu's GTF. This is what classification receives. |
+| `prefilter_kept_transcripts.txt` | One kept transcript identifier per line. |
+| `filter_summary.tsv` | Transcripts in, removed by each rule and kept, split into reference and novel, plus genes in and kept. Header lines record the expression source and thresholds. Each transcript is counted under the first rule it fails. |
 
 ### Validated transcripts & annotations
 
@@ -262,6 +273,7 @@ Only produced for ONT cDNA libraries the pipeline orients itself, and skipped by
 | `BambuOutput_counts_gene_validated.txt` | Gene-level raw count matrix restricted to validated features. |
 | `BambuOutput_counts_transcript_validated.txt` | Transcript-level raw count matrix restricted to validated features. |
 | `BambuOutput_CPM_transcript_validated.txt` | Transcript-level CPM matrix for validated features. |
+| `BambuOutput_fullLengthCounts_transcript_validated.txt` | Full-length transcript count matrix for validated features. |
 | `BambuOutput_uniqueCounts_transcript_validated.txt` | Uniquely mapped transcript count matrix for validated features. |
 | `BambuOutput_fullLength_validated.gtf` | GTF of validated full-length transcript isoforms. |
 | `BambuOutput_annotations_validated.gtf` | Validated annotation. |
@@ -454,7 +466,7 @@ matching or contained by a reference was already resolved as annotated. `s`, `e`
 
 Each candidate is assigned one of three `pulposeq_transcript_biotype` values, from its class
 code, its coding-potential prediction, and the biotype of the reference gene it was
-matched against. Minimal transcript length accepted is 500nt, following [Mattick's lncRNA consensus statement](https://doi.org/10.1038/s41580-022-00566-8).
+matched against. Minimal transcript length accepted is 500nt, following [Mattick's lncRNA consensus statement](https://doi.org/10.1038/s41580-022-00566-8); this floor is applied before classification, in `PREFILTER` (see [Filtered count-matrices](#filtered-count-matrices-bambu_filter)).
 
 **`u`, `i` and `x` share no splice structure with a reference.** `u` has no
 reference at all, `i` lies wholly inside an intron, and `x` overlaps on the opposite
