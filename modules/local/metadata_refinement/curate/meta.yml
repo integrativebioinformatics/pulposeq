@@ -1,0 +1,147 @@
+name: "curate"
+description: >-
+  Write the final, curated transcript set: every table and annotation restricted to
+  the same transcripts (reference transcripts PREFILTER kept, plus the novel models
+  that passed curation). Replaces VALIDATE_BAMBU_COUNTS and VALIDATE_BAMBU_GTF with
+  the same outputs and rules, and adds a per-transcript read-support table and,
+  when oarfish ran, oarfish's tables restricted to the same transcripts.
+keywords:
+  - curation
+  - transcriptome
+  - bambu
+  - oarfish
+  - lncRNA
+tools:
+  - r:
+      description: R statistical computing environment.
+      homepage: https://www.r-project.org/
+      licence: ["GPL-2.0-or-later"]
+  - summarizedexperiment:
+      description: Bioconductor container for assay data and metadata.
+      homepage: https://bioconductor.org/packages/SummarizedExperiment/
+      licence: ["Artistic-2.0"]
+
+input:
+  - novel_metadata:
+      type: file
+      description: Curated novel transcripts (qry_id column).
+      pattern: "novel_transcripts_validated_metadata.csv"
+  - counts_transcript:
+      type: file
+      description: PREFILTER's transcript counts.
+      pattern: "BambuOutput_counts_transcript_filter.txt"
+  - counts_gene:
+      type: file
+      description: PREFILTER's gene counts.
+      pattern: "BambuOutput_counts_gene_filter.txt"
+  - cpm_transcript:
+      type: file
+      description: PREFILTER's transcript CPM.
+      pattern: "BambuOutput_CPM_transcript_filter.txt"
+  - full_length_counts_transcript:
+      type: file
+      description: PREFILTER's full-length counts.
+      pattern: "BambuOutput_fullLengthCounts_transcript_filter.txt"
+  - unique_counts_transcript:
+      type: file
+      description: PREFILTER's unique counts.
+      pattern: "BambuOutput_uniqueCounts_transcript_filter.txt"
+  - extended_gtf:
+      type: file
+      description: Bambu's extended annotation, subset to the curated transcripts.
+      pattern: "BambuOutput_extended_annotations.gtf"
+  - expression_source:
+      type: string
+      description: Which counts decided expression, "bambu" or "oarfish". Recorded in the oarfish object.
+  - oarfish_counts:
+      type: file
+      description: OARFISH_MERGE transcript counts. Empty list unless oarfish ran.
+      pattern: "oarfish_counts_transcript.txt"
+  - oarfish_counts_gene:
+      type: file
+      description: OARFISH_MERGE gene counts. Empty list unless oarfish ran.
+      pattern: "oarfish_counts_gene.txt"
+  - oarfish_cpm:
+      type: file
+      description: OARFISH_MERGE CPM. Empty list unless oarfish ran.
+      pattern: "oarfish_CPM_transcript.txt"
+  - oarfish_tpm:
+      type: file
+      description: OARFISH_MERGE TPM, PacBio only. Empty list otherwise.
+      pattern: "oarfish_TPM_transcript.txt"
+  - oarfish_bootstraps:
+      type: file
+      description: OARFISH_MERGE bootstrap replicates. Empty list without bootstraps.
+      pattern: "oarfish_bootstraps.rds"
+  - r_script:
+      type: file
+      description: The curate_transcripts.R script staged from bin/.
+      pattern: "curate_transcripts.R"
+
+output:
+  - counts_transcript_validated:
+      type: file
+      description: Bambu transcript counts for the curated transcripts.
+      pattern: "BambuOutput_counts_transcript_validated.txt"
+  - counts_gene_validated:
+      type: file
+      description: Bambu gene counts for genes with at least one curated transcript.
+      pattern: "BambuOutput_counts_gene_validated.txt"
+  - cpm_transcript_validated:
+      type: file
+      description: Bambu transcript CPM for the curated transcripts.
+      pattern: "BambuOutput_CPM_transcript_validated.txt"
+  - full_length_counts_transcript_validated:
+      type: file
+      description: Bambu full-length counts for curated transcripts with at least one full-length read.
+      pattern: "BambuOutput_fullLengthCounts_transcript_validated.txt"
+  - unique_counts_transcript_validated:
+      type: file
+      description: Bambu unique counts for curated transcripts with at least one unique read.
+      pattern: "BambuOutput_uniqueCounts_transcript_validated.txt"
+  - annotations_validated_gtf:
+      type: file
+      description: The curated transcripts, lines unchanged from Bambu's extended annotation.
+      pattern: "BambuOutput_annotations_validated.gtf"
+  - fullLength_validated_gtf:
+      type: file
+      description: Curated transcripts with at least one full-length read.
+      pattern: "BambuOutput_fullLength_validated.gtf"
+  - uniquelyMapped_validated_gtf:
+      type: file
+      description: Curated transcripts with at least one unique read.
+      pattern: "BambuOutput_uniquelyMapped_validated.gtf"
+  - read_support:
+      type: file
+      description: >-
+        One row per curated transcript: Bambu total, full-length and unique reads
+        summed across samples, full_length_supported, and the oarfish total when
+        oarfish ran. Reported, not used to filter.
+      pattern: "transcript_read_support.tsv"
+  - oarfish_counts_transcript:
+      type: file
+      description: oarfish transcript counts for the curated transcripts.
+      pattern: "oarfish_counts_transcript_validated.txt"
+  - oarfish_counts_gene:
+      type: file
+      description: oarfish gene counts for genes with at least one curated transcript.
+      pattern: "oarfish_counts_gene_validated.txt"
+  - oarfish_cpm_transcript:
+      type: file
+      description: oarfish CPM, computed over every model in oarfish's index, for the curated transcripts.
+      pattern: "oarfish_CPM_transcript_validated.txt"
+  - oarfish_tpm_transcript:
+      type: file
+      description: oarfish TPM for the curated transcripts, PacBio only.
+      pattern: "oarfish_TPM_transcript_validated.txt"
+  - oarfish_se:
+      type: file
+      description: SummarizedExperiment with assays counts and infRep1..N (bootstrap replicates), ready for fishpond.
+      pattern: "oarfish_validated_se.rds"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"

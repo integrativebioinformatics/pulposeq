@@ -204,7 +204,7 @@ own (for example edgeR's `filterByExpr`) to the output count tables before testi
 
 Lowering `min_total_counts` keeps more lowly expressed transcripts, which matters most
 for novel lncRNAs; raising it keeps fewer. How many transcripts each rule removed is
-written to `bambu_filter/filter_summary.tsv`.
+written to `transcriptome/curated/metadata/filter_summary.tsv`.
 
 ### Quantification with oarfish {#oarfish}
 
@@ -227,7 +227,7 @@ then sums oarfish counts instead of Bambu's. This changes which transcripts end 
 the results, not just which files are written: two runs on the same data, with and
 without oarfish, can give different novel lncRNA lists. A transcript kept on oarfish
 counts stays in Bambu's tables even if Bambu gave it no reads. Which source decided is
-written at the top of `bambu_filter/filter_summary.tsv`.
+written at the top of `transcriptome/curated/metadata/filter_summary.tsv`.
 
 **Settings that follow your library.**
 
@@ -251,7 +251,7 @@ module) and `-d fw`.
 > benchmarks of oarfish so far cover annotated transcripts, not novel ones.
 
 Each sample's raw oarfish output, and a per-sample summary with mapping rate and
-agreement with Bambu, are written to `oarfish/` (see the output documentation).
+agreement with Bambu, are written to `transcriptome/oarfish/`; the curated oarfish tables, restricted to the same transcripts as Bambu's, to `transcriptome/curated/counts/` (see the output documentation).
 
 ### Coding potential
 
@@ -260,7 +260,7 @@ coding-potential call from [CPC2](https://github.com/gao-lab/CPC2_standalone),
 so the predictor decides what the pipeline's main output contains. CPC2 is
 organism-agnostic and needs no species-specific model.
 
-Its output is published to `coding_potential/`, and every novel record carries a
+Its output is published to `transcriptome/classification/`, and every novel record carries a
 `coding_predictor` column naming the tool and a `coding_prob` column holding
 P(coding), followed by the CPC2 features behind the call: `peptide_length`,
 `Fickett_score`, `pI` and `ORF_integrity`.

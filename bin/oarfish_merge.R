@@ -177,17 +177,37 @@ bambu_samples <- sub("\\.bam$", "", bambu_columns)
 colnames(bambu_mat) <- bambu_samples
 shared_tx <- intersect(tx_names, rownames(bambu_mat))
 
-# Spearman correlation over transcripts either tool saw reads for. Leaving out the
-# transcripts both called zero keeps the large unexpressed part of the annotation
-# from inflating the figure.
-spearman_vs_bambu <- vapply(samples, function(s) {
-    if (!s %in% bambu_samples) return(NA_real_)
-    o <- counts[shared_tx, s]
-    b <- bambu_mat[shared_tx, s]
-    seen <- o > 0 | b > 0
-    if (sum(seen) < 3) return(NA_real_)
-    suppressWarnings(stats::cor(o[seen], b[seen], method = "spearman"))
-}, numeric(1))
+# Bambu vs oarfish, as two technical diagnostics -- not measures of accuracy.
+#
+#   1. Detection: transcripts with reads in Bambu, in oarfish, in both, and the
+#      overlap (Jaccard: both / either).
+#   2. Magnitude: Spearman correlation over the transcripts BOTH tools gave reads
+#      to, i.e. conditional on detection by both. Restricting to co-detected
+#      transcripts removes the mass of zero ties that drags a rank correlation down
+#      on shallow data, but it also leaves out detection disagreement (reported
+#      separately above) and favours better-expressed transcripts. It answers "where
+#      both see a transcript, do they agree on how much?", nothing more.
+#
+# Both depend on depth and on how each tool treats ambiguous reads, so they must not
+# be used to rank one tool against the other. Their job is to catch broken runs:
+# mismatched transcript IDs or swapped samples drive both towards zero.
+compare_sample <- function(s) {
+    if (!s %in% bambu_samples) return(c(NA, NA, NA, NA, NA))
+    o <- counts[shared_tx, s] > 0
+    b <- bambu_mat[shared_tx, s] > 0
+    both <- o & b
+    rho <- if (sum(both) >= 3) {
+        suppressWarnings(stats::cor(counts[shared_tx, s][both], bambu_mat[shared_tx, s][both],
+                                    method = "spearman"))
+    } else NA_real_
+    c(sum(b), sum(o), sum(both), if (sum(o | b) > 0) sum(both) / sum(o | b) else NA_real_, rho)
+}
+comparison <- vapply(samples, compare_sample, numeric(5))
+detected_bambu     <- comparison[1, ]
+detected_oarfish   <- comparison[2, ]
+detected_both      <- comparison[3, ]
+detection_jaccard  <- comparison[4, ]
+spearman_codetected <- comparison[5, ]
 
 # Read-level mapping outcome, from oarfish's discard table (0.10.x field names).
 # NA when a field is absent, e.g. after a change in oarfish's output.
@@ -210,7 +230,11 @@ summary_tab <- data.frame(
     assigned_reads            = round(lib_size, 2),
     transcripts_with_reads    = colSums(counts > 0),
     bootstraps                = n_bootstraps[samples],
-    spearman_vs_bambu         = round(spearman_vs_bambu, 4),
+    detected_bambu            = detected_bambu,
+    detected_oarfish          = detected_oarfish,
+    detected_both             = detected_both,
+    detection_jaccard         = round(detection_jaccard, 4),
+    spearman_codetected       = round(spearman_codetected, 4),
     index_reference           = index_n("reference"),
     index_novel               = index_n("novel"),
     index_novel_unstranded_left_out = index_n("novel_unstranded_left_out"),
@@ -221,9 +245,19 @@ write_tsv(summary_tab, "oarfish_summary.tsv")
 cat(sprintf("Merged %d samples x %d transcripts (%d reference, %d novel in the index)\n",
             length(samples), length(tx_names), index_n("reference"), index_n("novel")))
 cat(sprintf("Bootstraps per sample: %s\n", paste(unique(n_bootstraps), collapse = ", ")))
-cat(sprintf("Spearman vs Bambu: %s\n", paste(sprintf("%s=%.3f", samples, spearman_vs_bambu), collapse = ", ")))
-low <- samples[!is.na(spearman_vs_bambu) & spearman_vs_bambu < 0.3]
-if (length(low) > 0) {
-    warning(sprintf("Low agreement with Bambu (Spearman < 0.3) for: %s. Check that sample names and transcript IDs match.",
-                    paste(low, collapse = ", ")), call. = FALSE)
+cat(sprintf("Detection overlap with Bambu (Jaccard): %s\n",
+            paste(sprintf("%s=%.3f", samples, detection_jaccard), collapse = ", ")))
+cat(sprintf("Spearman with Bambu, co-detected transcripts: %s\n",
+            paste(sprintf("%s=%.3f", samples, spearman_codetected), collapse = ", ")))
+
+# The alarm fires only for clearly broken runs, the pattern mismatched IDs or
+# swapped samples produce. The cut-offs are a judgement for catching obvious
+# errors, not a statistical test.
+broken <- samples[is.na(spearman_codetected) | spearman_codetected < 0.1 |
+                  is.na(detection_jaccard) | detection_jaccard < 0.05]
+if (length(broken) > 0) {
+    warning(sprintf(paste("Bambu and oarfish barely agree for: %s (co-detected Spearman < 0.1,",
+                          "detection overlap < 0.05, or no shared transcripts). Check that",
+                          "sample names and transcript IDs match."),
+                    paste(broken, collapse = ", ")), call. = FALSE)
 }

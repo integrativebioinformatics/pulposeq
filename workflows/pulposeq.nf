@@ -7,8 +7,7 @@
 include { MULTIQC                           } from '../modules/nf-core/multiqc/main'
 include { NOVEL_TRANSCRIPTS                 } from '../modules/local/metadata_refinement/novel_transcripts/main'
 include { PREFILTER                         } from '../modules/local/metadata_refinement/prefilter/main'
-include { VALIDATE_BAMBU_GTF                } from '../modules/local/metadata_refinement/validate_bambu_gtf/main'
-include { VALIDATE_BAMBU_COUNTS             } from '../modules/local/metadata_refinement/validate_bambu_counts/main'
+include { CURATE                            } from '../modules/local/metadata_refinement/curate/main'
 include { REF_TRANSCRIPTS                   } from '../modules/local/metadata_refinement/ref_transcripts/main'
 include { ANNOTATION                        } from '../modules/local/metadata_refinement/annotation/main'
 include { BAM_COVERAGE                      } from '../modules/local/bam_coverage/main'
@@ -44,7 +43,12 @@ workflow PULPOSEQ {
     ch_versions             = channel.empty()
     ch_multiqc_files        = channel.empty()
     ch_gtf_new_transcripts  = channel.empty()
-    ch_oarfish_counts       = channel.value([])   // stays empty unless oarfish runs
+    // The oarfish channels stay empty lists unless oarfish runs
+    ch_oarfish_counts       = channel.value([])
+    ch_oarfish_gene         = channel.value([])
+    ch_oarfish_cpm          = channel.value([])
+    ch_oarfish_tpm          = channel.value([])
+    ch_oarfish_bootstraps   = channel.value([])
 
     // The three structural skips are nested, because each stage consumes the last
     // one's output: nothing downstream of minimap2 can run without alignments, and
@@ -154,7 +158,13 @@ workflow PULPOSEQ {
                 params.reference,
                 ASSEMBLY.out.transcript_counts
             )
-            ch_oarfish_counts = QUANTIFICATION.out.counts_transcript
+            ch_oarfish_counts     = QUANTIFICATION.out.counts_transcript
+            ch_oarfish_gene       = QUANTIFICATION.out.counts_gene
+            ch_oarfish_cpm        = QUANTIFICATION.out.cpm_transcript
+            // TPM exists for PacBio only, bootstraps only when requested: an empty
+            // list stands in so curation is not left waiting for a missing file
+            ch_oarfish_tpm        = QUANTIFICATION.out.tpm_transcript.ifEmpty([])
+            ch_oarfish_bootstraps = QUANTIFICATION.out.bootstraps.ifEmpty([])
             ch_versions = ch_versions.mix(QUANTIFICATION.out.versions)
         }
 
@@ -206,18 +216,32 @@ workflow PULPOSEQ {
         )
         ch_versions = ch_versions.mix(NOVEL_TRANSCRIPTS.out.versions)
 
-        VALIDATE_BAMBU_COUNTS (
+        //
+        // The final transcript set: reference transcripts PREFILTER kept, plus the
+        // novel models that passed curation. Every table and GTF from here on --
+        // Bambu's and, when it ran, oarfish's -- holds exactly these transcripts.
+        //
+        CURATE (
             NOVEL_TRANSCRIPTS.out.novel_combined_metadata,
-            PREFILTER.out.counts_gene_filter,
             PREFILTER.out.counts_transcript_filter,
+            PREFILTER.out.counts_gene_filter,
             PREFILTER.out.cpm_transcript_filter,
             PREFILTER.out.full_length_counts_transcript_filter,
-            PREFILTER.out.unique_counts_transcript_filter
+            PREFILTER.out.unique_counts_transcript_filter,
+            ASSEMBLY.out.gtf_all_transcripts,
+            expression_source,
+            ch_oarfish_counts,
+            ch_oarfish_gene,
+            ch_oarfish_cpm,
+            ch_oarfish_tpm,
+            ch_oarfish_bootstraps,
+            file("${projectDir}/bin/curate_transcripts.R", checkIfExists: true)
         )
+        ch_versions = ch_versions.mix(CURATE.out.versions)
 
         REF_TRANSCRIPTS (
-            VALIDATE_BAMBU_COUNTS.out.counts_transcript_validated,
-            VALIDATE_BAMBU_COUNTS.out.counts_gene_validated,
+            CURATE.out.counts_transcript_validated,
+            CURATE.out.counts_gene_validated,
             ASSEMBLY.out.gtf_all_transcripts,
             params.annotation,
             file("${projectDir}/bin/ref_transcripts.R", checkIfExists: true),
@@ -225,20 +249,12 @@ workflow PULPOSEQ {
         )
         ch_versions = ch_versions.mix(REF_TRANSCRIPTS.out.versions)
 
-        VALIDATE_BAMBU_GTF (
-            ASSEMBLY.out.gtf_all_transcripts,
-            VALIDATE_BAMBU_COUNTS.out.counts_transcript_validated,
-            VALIDATE_BAMBU_COUNTS.out.full_length_counts_transcript_validated,
-            VALIDATE_BAMBU_COUNTS.out.unique_counts_transcript_validated
-        )
-        ch_versions = ch_versions.mix(VALIDATE_BAMBU_GTF.out.versions)
-
         //
         // The final annotation, for plotting. The validated GTFs are read here but
-        // never rewritten -- they are published as validate_bambu_gtf.sh wrote them.
+        // never rewritten -- they are published as CURATE wrote them.
         //
         ANNOTATION (
-            VALIDATE_BAMBU_GTF.out.annotations_validated_gtf,
+            CURATE.out.annotations_validated_gtf,
             REF_TRANSCRIPTS.out.transcriptome_metadata,
             NOVEL_TRANSCRIPTS.out.novel_combined_metadata,
             params.annotation,
@@ -259,8 +275,8 @@ workflow PULPOSEQ {
         GENOMIC_CONTEXT (
             ANNOTATION.out.final_gtf,
             BAM_COVERAGE.out.bigwig.map { _meta, bw -> bw }.collect(),
-            VALIDATE_BAMBU_COUNTS.out.counts_transcript_validated,
-            VALIDATE_BAMBU_COUNTS.out.full_length_counts_transcript_validated,
+            CURATE.out.counts_transcript_validated,
+            CURATE.out.full_length_counts_transcript_validated,
             params.annotation,
             file("${projectDir}/bin/genomic_context.R", checkIfExists: true)
         )
@@ -272,17 +288,17 @@ workflow PULPOSEQ {
         VALIDATE_BAMBU_OUTPUTS (
             ASSEMBLY.out.rds_transcript,
             ASSEMBLY.out.rds_gene,
-            VALIDATE_BAMBU_COUNTS.out.counts_transcript_validated,
-            VALIDATE_BAMBU_COUNTS.out.counts_gene_validated,
+            CURATE.out.counts_transcript_validated,
+            CURATE.out.counts_gene_validated,
             file("${projectDir}/bin/validate_bambu_out.R", checkIfExists: true)
         )
         ch_versions = ch_versions.mix(VALIDATE_BAMBU_OUTPUTS.out.versions)
 
         RENDER_REPORT (
-            VALIDATE_BAMBU_COUNTS.out.counts_gene_validated,
-            VALIDATE_BAMBU_COUNTS.out.counts_transcript_validated,
-            VALIDATE_BAMBU_COUNTS.out.full_length_counts_transcript_validated,
-            VALIDATE_BAMBU_COUNTS.out.unique_counts_transcript_validated,
+            CURATE.out.counts_gene_validated,
+            CURATE.out.counts_transcript_validated,
+            CURATE.out.full_length_counts_transcript_validated,
+            CURATE.out.unique_counts_transcript_validated,
             REF_TRANSCRIPTS.out.transcriptome_metadata,
             REF_TRANSCRIPTS.out.protein_coding_metadata,
             REF_TRANSCRIPTS.out.lncrna_metadata,

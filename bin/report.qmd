@@ -1241,7 +1241,7 @@ Following transcriptome assembly with **Bambu** [^1], the extended annotations a
 
 [^1]: Chen, Ying, et al. "Context-aware transcript quantification from long-read RNA-seq data with Bambu." Nature methods 20.8 (2023): 1187-1195. https://doi.org/10.1038/s41592-023-01908-w
 
-1.  Transcripts were filtered once, before classification. Novel models without a strand or shorter than 500 nt were removed, and any transcript, reference or novel, with fewer than `--min_total_counts` counts summed across all samples (5 by default) was removed. Genes were kept if at least one of their transcripts was kept. The filtered quantification files and a per-rule summary (`filter_summary.tsv`) are stored in the `bambu_filter/` results directory.
+1.  Transcripts were filtered once, before classification. Novel models without a strand or shorter than 500 nt were removed, and any transcript, reference or novel, with fewer than `--min_total_counts` counts summed across all samples (5 by default) was removed. Genes were kept if at least one of their transcripts was kept. A per-rule summary is stored in `transcriptome/curated/metadata/filter_summary.tsv`.
 2.  Novel transcript isoforms were compared against the reference annotation using **GffCompare** [^2] and assessed for coding potential using **CPC2** [^3]. Isoforms were subsequently classified according to their GffCompare class code, coding-potential prediction, and the biotype of the associated reference gene.
 3.  Transcript structural features, including exon composition and transcript architecture, were characterized directly from the reference annotation and assembled GTF files using **rtracklayer** [^5].
 4.  Annotation files (GFT) and count matrices were restricted to the curated transcript set, and transcript classification and biotype information were incorporated into the final annotations.
@@ -1257,7 +1257,7 @@ Following transcriptome assembly with **Bambu** [^1], the extended annotations a
 
 [^6]: Kramer, Nicole E., et al. "Plotgardener: cultivating precise multi-panel figures in R." Bioinformatics 38.7 (2022): 2042-2045. https://doi.org/10.1093/bioinformatics/btac057
 
-The final validated outputs are provided in the `bambu_validated`, `novel_transcripts`, and `ref_transcripts` directories. Per-sample coverage tracks are available in `coverage/` as BigWig files, while genomic context visualizations can be found in `genomic_context/`.
+The final curated outputs are provided in `transcriptome/curated/`, sorted into `annotation/`, `counts/`, `metadata/` and `plots/`. Per-sample coverage tracks are available in `coverage/` as BigWig files, while genomic context visualizations can be found in `genomic_context/`.
 
 ::: callout-note
 ## Filtering criteria
