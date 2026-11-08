@@ -20,6 +20,8 @@ include { QC_FILT                           } from '../subworkflows/local/qc'
 include { ALIGNMENT                         } from '../subworkflows/local/alignment'
 include { ASSEMBLY                          } from '../subworkflows/local/assembly'
 include { CLASSIFICATION                    } from '../subworkflows/local/classification'
+include { QUANTIFICATION                    } from '../subworkflows/local/quantification'
+include { oarfishEnabled                    } from '../subworkflows/local/utils_nfcore_pulposeq_pipeline'
 include { paramsSummaryMap                  } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc              } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML            } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -42,6 +44,7 @@ workflow PULPOSEQ {
     ch_versions             = channel.empty()
     ch_multiqc_files        = channel.empty()
     ch_gtf_new_transcripts  = channel.empty()
+    ch_oarfish_counts       = channel.value([])   // stays empty unless oarfish runs
 
     // The three structural skips are nested, because each stage consumes the last
     // one's output: nothing downstream of minimap2 can run without alignments, and
@@ -51,6 +54,13 @@ workflow PULPOSEQ {
     def run_alignment       = !params.skip_minimap2
     def run_bambu           = run_alignment && !params.skip_bambu
     def run_classification  = run_bambu && !params.skip_class
+
+    // oarfish is opt-in. It quantifies against Bambu's models, so it can only run
+    // with Bambu; validateInputParameters stops the run if --run_oarfish is combined
+    // with a skip that removes Bambu. When it runs, its counts -- not Bambu's --
+    // decide which transcripts PREFILTER keeps.
+    def run_oarfish         = run_bambu && oarfishEnabled()
+    def expression_source   = run_oarfish ? 'oarfish' : 'bambu'
 
     // What the user asserted about the reads on disk. ONT_DRS is native RNA and
     // PacBio is oriented upstream by lima, so both are stranded by construction;
@@ -134,11 +144,27 @@ workflow PULPOSEQ {
         ch_versions = ch_versions.mix(ASSEMBLY.out.versions)
 
         //
+        // Optional oarfish quantification, against every Bambu model and on the same
+        // reads minimap2 aligned
+        //
+        if (run_oarfish) {
+            QUANTIFICATION (
+                ch_reads_for_alignment,
+                ASSEMBLY.out.gtf_all_transcripts,
+                params.reference,
+                ASSEMBLY.out.transcript_counts
+            )
+            ch_oarfish_counts = QUANTIFICATION.out.counts_transcript
+            ch_versions = ch_versions.mix(QUANTIFICATION.out.versions)
+        }
+
+        //
         // The one place transcripts are filtered. Runs whenever Bambu runs, before
         // classification, so gffread, gffcompare, CPC2 and everything curated after
         // them see the same transcript list. Unstranded and < 500 nt novel models are
         // removed here, and any transcript below --min_total_counts summed across all
-        // samples. Bambu's raw output stays untouched.
+        // samples -- counted by oarfish when it runs, by Bambu otherwise. Bambu's raw
+        // output stays untouched.
         //
         PREFILTER (
             ASSEMBLY.out.transcript_counts,
@@ -147,8 +173,8 @@ workflow PULPOSEQ {
             ASSEMBLY.out.full_length,
             ASSEMBLY.out.unique_counts,
             ASSEMBLY.out.gtf_new_transcripts,
-            'bambu',
-            [],
+            expression_source,
+            ch_oarfish_counts,
             params.min_total_counts,
             file("${projectDir}/bin/prefilter_transcripts.R", checkIfExists: true)
         )

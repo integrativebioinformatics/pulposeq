@@ -362,6 +362,27 @@ for GENCODE, `gene_biotype`/`transcript_biotype` for Ensembl.
 > `gene_id`; the genomic context figures and the report's novel section key on
 > `compared_*`, and a panel draws both loci where they differ.
 
+## `oarfish/` (optional second quantification)
+
+Written only with `--run_oarfish true`. oarfish quantifies every Bambu model (except
+unstranded novel models), so these raw files also contain transcripts that the
+[expression filter](#filtered-count-matrices-bambu_filter) later removes. Use the
+filtered and curated tables for results.
+
+| File | Description |
+|--------------------------------|----------------------------------------|
+| `<sample>.quant` | Estimated reads per transcript (`num_reads`), with transcript length (`len`). Counts are estimates, so they can be fractional. |
+| `<sample>.infreps.pq` | Bootstrap replicates: one row per transcript, in the same order as `.quant`, one column per replicate (Parquet). Absent with `--oarfish_num_bootstraps 0`. |
+| `<sample>.ambig_info.tsv` | Per transcript, reads that aligned only to it and reads shared with other transcripts. |
+| `<sample>.meta_info.json` | oarfish's settings and read-level mapping outcome for the sample. |
+| `oarfish_summary.tsv` | One row per sample: reads mapped and unmapped, mapping rate, reads assigned, transcripts with reads, bootstrap replicates, Spearman correlation with Bambu over transcripts either tool saw reads for, and the size of oarfish's index (reference, novel, and unstranded novel models left out). A low correlation usually means mismatched sample names or transcript IDs. |
+| `oarfish_meta_info.tsv` | Every field of every sample's `meta_info.json`, as `sample` / `field` / `value` rows. |
+
+> [!WARNING]
+> Do not compute TPM from ONT counts for analysis. TPM divides by transcript length,
+> which over-corrects the length bias of ONT libraries; CPM is the better scale for
+> ONT, TPM for PacBio.
+
 ## `gffcompare/` (novel transcript comparison)
 
 > _Check the GffCompare's official [documentation](http://ccb.jhu.edu/software/stringtie/gffcompare.shtml)._

@@ -20,6 +20,9 @@
 - [Bambu](https://doi.org/10.1038/s41592-023-01908-w)
   > Chen Y, Sim A, Wan YK, Yeo K, Lee JJX, Ling MH, Love MI, Göke J. Context-aware transcript quantification from long-read RNA-seq data with Bambu. Nat Methods. 2023 Aug;20(8):1187-1195. doi: 10.1038/s41592-023-01908-w. Epub 2023 Jun 12. PMID: 37308696; PMCID: PMC10448944.
 
+- [oarfish](https://doi.org/10.1093/bioinformatics/btaf240)
+  > Zare Jousheghani Z, Singh NP, Patro R. Oarfish: enhanced probabilistic modeling leads to improved accuracy in long read transcriptome quantification. Bioinformatics. 2025 Jul;41(Supplement_1):i304. doi: 10.1093/bioinformatics/btaf240. PMCID: PMC12261437.
+
 - [GffCompare/GffRead](https://doi.org/10.12688/f1000research.23297.2)
   > Pertea G, Pertea M. GFF Utilities: GffRead and GffCompare. F1000Res. 2020 Apr 28;9:ISCB Comm J-304. doi: 10.12688/f1000research.23297.2. PMID: 32489650; PMCID: PMC7222033.
 

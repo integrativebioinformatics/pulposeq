@@ -11,6 +11,8 @@ Initial release of integrativebioinformatics/pulposeq, created with the [nf-core
 
 - `PREFILTER` step (`bin/prefilter_transcripts.R`): the one place transcripts are filtered, right after Bambu and before classification. It removes unstranded novel models, novel models shorter than 500 nt, and any transcript whose counts summed across all samples fall below the new `--min_total_counts` parameter (default 5). It writes a per-rule `filter_summary.tsv`.
 - `--min_total_counts` parameter.
+- Optional oarfish quantification (`--run_oarfish`, `--oarfish_num_bootstraps`), using the nf-core `oarfish/readmode` module. oarfish quantifies every Bambu model except unstranded novel ones, on the same reads minimap2 aligns, with bootstrap replicates. When it runs, its counts replace Bambu's as the expression source for `PREFILTER`. New local modules `OARFISH_INDEX_FASTA` and `OARFISH_MERGE` (`bin/oarfish_merge.R`), and an `oarfish/` output folder with per-sample results and `oarfish_summary.tsv`.
+- Resource settings for the `process_high` label, used by the nf-core oarfish module, which pulposeq did not define before.
 
 ### `Changed`
 

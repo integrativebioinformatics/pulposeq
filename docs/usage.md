@@ -129,6 +129,8 @@ After seeting up the samplesheet, follow up to set the pipeline parameters.
 | `skip_class` | Skip transcriptome characterization; `bambu` still runs (runs MultiQC, then finishes pipeline execution) |
 | `ndr` | Bambu's novel discovery rate. Leave unset for Bambu's own automatic choice (see [below](#novel-discovery-rate)) |
 | `min_total_counts` | Keep a transcript only if its counts, summed across all samples, reach this value (default `5`). Applies to reference and novel transcripts (see [below](#expression-filter)) |
+| `run_oarfish` | Also quantify every Bambu model with oarfish (default `false`). When on, oarfish counts decide expression in the filter above (see [below](#oarfish)) |
+| `oarfish_num_bootstraps` | Bootstrap replicates oarfish computes per sample (default `30`; `0` turns them off) |
 
 ### Choosing which NanoComp reports to run
 
@@ -203,6 +205,53 @@ own (for example edgeR's `filterByExpr`) to the output count tables before testi
 Lowering `min_total_counts` keeps more lowly expressed transcripts, which matters most
 for novel lncRNAs; raising it keeps fewer. How many transcripts each rule removed is
 written to `bambu_filter/filter_summary.tsv`.
+
+### Quantification with oarfish {#oarfish}
+
+`run_oarfish true` adds a second quantification with
+[oarfish](https://github.com/COMBINE-lab/oarfish). Bambu counts reads from their
+alignments to the genome; oarfish maps each sample's reads directly to transcript
+sequences, with its built-in mapper, and estimates how many reads each transcript
+produced. It also computes bootstrap replicates (`oarfish_num_bootstraps`, default
+`30`), which measure how uncertain each estimate is.
+
+**What oarfish quantifies against.** Every model Bambu assembled: every reference
+transcript and every novel model, before any filtering. That way, reads from models
+the expression filter later removes stay on those models instead of being pushed onto
+the transcripts that are kept. The one exception is novel models without a strand,
+which are left out because oarfish only accepts reads aligned in a transcript's own
+orientation (every read reaching it is already oriented).
+
+**When oarfish runs, its counts decide expression.** The [expression filter](#expression-filter)
+then sums oarfish counts instead of Bambu's. This changes which transcripts end up in
+the results, not just which files are written: two runs on the same data, with and
+without oarfish, can give different novel lncRNA lists. A transcript kept on oarfish
+counts stays in Bambu's tables even if Bambu gave it no reads. Which source decided is
+written at the top of `bambu_filter/filter_summary.tsv`.
+
+**Settings that follow your library.**
+
+| `library` | oarfish `--seq-tech` | Mapping preset |
+|---|---|---|
+| `ONT_cDNA` | `ont-cdna` | `map-ont` |
+| `ONT_DRS` | `ont-drna` | `map-ont` |
+| `PacBio` (with `map_hq` unset or `true`) | `pac-bio-hifi` | `map-hifi` |
+| `PacBio` with `map_hq false` | `pac-bio` | `map-pb` |
+
+oarfish runs with `--filter-group no-filters --model-coverage` (fixed by the nf-core
+module) and `-d fw`.
+
+`run_oarfish` needs Bambu's models, so it cannot be combined with `skip_minimap2` or
+`skip_bambu`.
+
+> [!NOTE]
+> oarfish works from transcript sequences only. A read from a region Bambu never
+> assembled has no matching transcript and may be assigned to a similar sequence
+> elsewhere. Including every Bambu model reduces this but cannot remove it. Published
+> benchmarks of oarfish so far cover annotated transcripts, not novel ones.
+
+Each sample's raw oarfish output, and a per-sample summary with mapping rate and
+agreement with Bambu, are written to `oarfish/` (see the output documentation).
 
 ### Coding potential
 
