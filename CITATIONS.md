@@ -21,7 +21,7 @@
   > Chen Y, Sim A, Wan YK, Yeo K, Lee JJX, Ling MH, Love MI, Göke J. Context-aware transcript quantification from long-read RNA-seq data with Bambu. Nat Methods. 2023 Aug;20(8):1187-1195. doi: 10.1038/s41592-023-01908-w. Epub 2023 Jun 12. PMID: 37308696; PMCID: PMC10448944.
 
 - [oarfish](https://doi.org/10.1093/bioinformatics/btaf240)
-  > Zare Jousheghani Z, Singh NP, Patro R. Oarfish: enhanced probabilistic modeling leads to improved accuracy in long read transcriptome quantification. Bioinformatics. 2025 Jul;41(Supplement_1):i304. doi: 10.1093/bioinformatics/btaf240. PMCID: PMC12261437.
+  > Zare Jousheghani Z, Singh NP, Patro R. Oarfish: enhanced probabilistic modeling leads to improved accuracy in long read transcriptome quantification. Bioinformatics. 2025 Jul;41(Supplement_1):i304-i313. doi: 10.1093/bioinformatics/btaf240. PMCID: PMC12261437.
 
 - [fishpond (InfRV)](https://doi.org/10.1093/nar/gkz622)
   > Zhu A, Srivastava A, Ibrahim JG, Patro R, Love MI. Nonparametric expression analysis using inferential replicate counts. Nucleic Acids Res. 2019;47(18):e105. doi: 10.1093/nar/gkz622. PMCID: PMC6765120.

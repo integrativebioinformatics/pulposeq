@@ -1260,7 +1260,7 @@ Following transcriptome assembly with **Bambu** [^1], the extended annotations a
 
 [^6]: Kramer, Nicole E., et al. "Plotgardener: cultivating precise multi-panel figures in R." Bioinformatics 38.7 (2022): 2042-2045. https://doi.org/10.1093/bioinformatics/btac057
 
-[^7]: Zare Jousheghani, Zahra, Noor Pratap Singh, and Rob Patro. "Oarfish: Enhanced probabilistic modeling leads to improved accuracy in long read transcriptome quantification." Bioinformatics 41.Supplement_1 (2025): i304. https://doi.org/10.1093/bioinformatics/btaf240
+[^7]: Zare Jousheghani, Zahra, Noor Pratap Singh, and Rob Patro. "Oarfish: Enhanced probabilistic modeling leads to improved accuracy in long read transcriptome quantification." Bioinformatics 41.Supplement_1 (2025): i304-i313. https://doi.org/10.1093/bioinformatics/btaf240
 
 The final curated outputs are provided in `transcriptome/curated/`, sorted into `annotation/`, `counts/`, `metadata/` and `plots/`. Per-sample coverage tracks are available in `coverage/` as BigWig files, while genomic context visualizations can be found in `genomic_context/`.
 

@@ -241,6 +241,24 @@ written at the top of `transcriptome/curated/metadata/filter_summary.tsv`.
 oarfish runs with `--filter-group no-filters --model-coverage` (fixed by the nf-core
 module) and `-d fw`.
 
+**How these settings compare with the oarfish paper** (Zare Jousheghani et al. 2025,
+and its analysis scripts, COMBINE-lab/oarfish-paper-scripts):
+
+| Setting | Paper | pulposeq |
+|---|---|---|
+| Coverage model | With and without; with (`--model-coverage`) performed best | Always on |
+| Alignment filters | `--filter-group no-filters` (main results) | Same |
+| Strand | `-d fw` for direct RNA only; both strands allowed for cDNA and PacBio | `-d fw` for every library, because every read reaching oarfish is oriented (the same reason minimap2 runs with `-uf`) |
+| `--seq-tech` | `ont-cdna`, `ont-drna`, `pac-bio` (RSII), `pac-bio-hifi` | Same mapping (table above) |
+| Score weight `exp((AS - AS_max) / D)` | The paper's Eq. 3 states `D = 10`; the released oarfish code uses `D = 5` (hard-coded up to 0.9, `--score-prob-denom` default from 0.10) | oarfish default, `D = 5` |
+| Read-mode mapper | minimap2 (through minimap2-rs) | rammap, which replaced minimap2-rs in oarfish 0.10.0. oarfish notes that raw-read results "may differ slightly" from the minimap2-based ones |
+| Bootstraps | Not evaluated | 30 by default |
+
+The paper's accuracy benchmarks quantify alignment (BAM) input; raw-read mode appears
+there in the runtime and memory comparison. The version pinned by the nf-core module,
+0.10.3, includes the 0.10.2 fix for ONT direct-RNA reads basecalled with `U`, which
+earlier 0.10 releases failed to map in raw-read mode.
+
 `run_oarfish` needs Bambu's models, so it cannot be combined with `skip_minimap2` or
 `skip_bambu`.
 
