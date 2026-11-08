@@ -1,5 +1,5 @@
 name: "validate_bambu_outputs"
-description: Regenerate Bambu's PCA and expression heatmaps from the curated transcriptome, and record the curation yield as a table.
+description: Transcript-level PCA and expression heatmap for every quantified model and for the curated transcriptome, from Bambu counts or, when oarfish ran, oarfish counts; and the curation yield as a table.
 keywords:
   - bambu
   - pca
@@ -37,12 +37,36 @@ input:
       type: file
       description: Validated gene counts; column one supplies the gene IDs to keep.
       pattern: "*.txt"
+  - oarfish_counts:
+      type: file
+      description: oarfish transcript counts for every model it quantified. An empty list unless oarfish ran.
+      pattern: "oarfish_counts_transcript.txt"
+  - oarfish_counts_gene:
+      type: file
+      description: oarfish gene counts for every gene. An empty list unless oarfish ran.
+      pattern: "oarfish_counts_gene.txt"
+  - oarfish_cpm:
+      type: file
+      description: oarfish transcript CPM for every model. An empty list unless oarfish ran; when given, the plots and the yield use oarfish's counts.
+      pattern: "oarfish_CPM_transcript.txt"
   - r_script:
       type: file
       description: The validate_bambu_out.R script staged from `bin/`.
       pattern: "validate_bambu_out.R"
 
 output:
+  - pca_all:
+      type: file
+      description: PCA over every model the expression source quantified.
+      pattern: "pca_all_models.png"
+  - pca_grouped_all:
+      type: file
+      description: PCA over every quantified model, coloured by group.
+      pattern: "pca_grouped_all_models.png"
+  - h_transcript_all:
+      type: file
+      description: Sample-by-sample Spearman correlation heatmap over every quantified model.
+      pattern: "heatmap_transcript_all_models.png"
   - pca:
       type: file
       description: PCA over the curated transcriptome.
@@ -51,13 +75,9 @@ output:
       type: file
       description: PCA over the curated transcriptome, coloured by group.
       pattern: "pca_grouped_validated.png"
-  - h_gene:
-      type: file
-      description: Gene-level expression heatmap over the curated set.
-      pattern: "heatmap_gene_validated.png"
   - h_transcript:
       type: file
-      description: Transcript-level expression heatmap over the curated set.
+      description: Sample-by-sample Spearman correlation heatmap over the curated transcriptome.
       pattern: "heatmap_transcript_validated.png"
   - rds_transcript:
       type: file
@@ -71,10 +91,11 @@ output:
       type: file
       description: >-
         The curation yield, one row per feature type, with columns feature_type,
-        curated_set, total_quantified, extended_annotations and recovery. Recovery is
-        measured against the expressed features rather than against the extended
-        annotation, so features Bambu quantified but no read supports are not counted
-        as losses.
+        curated_set, total_quantified, extended_annotations, recovery and
+        expression_source. Recovery is measured against the features with any counts
+        in the expression source (Bambu, or oarfish when it ran) rather than against
+        the extended annotation, so features no read supports are not counted as
+        losses.
       pattern: "validation_summary.csv"
   - versions:
       type: file

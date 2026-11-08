@@ -20,7 +20,7 @@
 # New here:
 #   - transcript_read_support.tsv: per transcript, total Bambu reads, full-length
 #     reads and unique reads, whether any read covers the full structure, and the
-#     oarfish total when oarfish ran
+#     oarfish total when oarfish ran (plus its mean InfRV when it ran with bootstraps)
 #   - oarfish's tables restricted to the same transcripts, and a
 #     SummarizedExperiment with the bootstrap replicates (assays infRep1..N, the
 #     layout fishpond expects)
@@ -184,6 +184,19 @@ if (has(opt$oarfish_counts)) {
             assays[[paste0("infRep", k)]] <- vapply(samples, function(s) boot[[s]][curated_tx, k],
                                                      numeric(length(curated_tx)))
             dimnames(assays[[paste0("infRep", k)]]) <- dimnames(counts)
+        }
+        # Inferential relative variance (Zhu et al. 2019), as fishpond::computeInfRV
+        # computes it: per sample, max(var - mean, 0) / (mean + 5) + 0.01 over the
+        # bootstrap replicates, then the mean across samples. It needs at least two
+        # replicates for a variance.
+        if (n_rep >= 2) {
+            infrv <- vapply(samples, function(s) {
+                b  <- boot[[s]][curated_tx, , drop = FALSE]
+                mu <- rowMeans(b)
+                v  <- rowSums((b - mu)^2) / (ncol(b) - 1)
+                pmax(v - mu, 0) / (mu + 5) + 0.01
+            }, numeric(length(curated_tx)))
+            support$oarfish_mean_infrv <- unname(rowMeans(matrix(infrv, nrow = length(curated_tx))))
         }
     }
     se <- SummarizedExperiment::SummarizedExperiment(

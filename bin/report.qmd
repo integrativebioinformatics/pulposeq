@@ -95,16 +95,18 @@ params:
     novel_non_coding_meta: "novel_non_coding_metadata.csv"
     genomic_context_candidates: "genomic_context_candidates.csv"
     intronic_context_candidates: "intronic_context_candidates.csv"
-    raw_pca: "pca.png"
-    raw_pca_grouped: "pca_grouped.png"
-    raw_heatmap_gene: "heatmap_gene.png"
-    raw_heatmap_transcript: "heatmap_transcript.png"
+    raw_pca: "pca_all_models.png"
+    raw_pca_grouped: "pca_grouped_all_models.png"
+    raw_heatmap_transcript: "heatmap_transcript_all_models.png"
     post_pca: "pca_validated.png"
     post_pca_grouped: "pca_grouped_validated.png"
-    post_heatmap_gene: "heatmap_gene_validated.png"
     post_heatmap_transcript: "heatmap_transcript_validated.png"
     bambu_metrics: "bambu_run_metrics.csv"
     validation_summary: "validation_summary.csv"
+    filter_summary: "filter_summary.tsv"
+    read_support: "transcript_read_support.tsv"
+    # Empty unless the pipeline ran with --run_oarfish.
+    oarfish_summary: ""
 knitr:
   opts_chunk:
     fig.showtext: true
@@ -1222,14 +1224,15 @@ plot_feature_counts <- function(df, title = NULL) {
 
 This report presents the analysis of a transcriptome assembled from long-read RNA sequencing data. The objective is to identify and characterize annotated and novel protein-coding and lncRNA transcripts.
 
-The report is structured into six sections:
+The report is structured into the following sections:
 
 1.  **Assembly Statistics:** Summary metrics of the transcriptome assembly.
-2.  **Sample-level Expression Clustering:** Assessment of sample relationships before and after curation.
-3.  **Isoform Diversity per Gene:** Isoforms per reference gene, and the known genes that gained novel isoforms.
-4.  **Reference Transcriptome:** Characterization of detected reference transcripts, including biotype distribution, transcript length, and exon structure.
-5.  **Novel Isoforms:** Description of newly identified transcripts and their supporting evidence.
-6.  **Genomic Context:** Visualization of transcript models and read coverage across representative genomic loci.
+2.  **Bambu vs oarfish:** How oarfish's transcript quantification compares with Bambu's, and how certain oarfish's estimates are. Present only when the pipeline ran with `--run_oarfish`.
+3.  **Sample-level Expression Clustering:** Assessment of sample relationships before and after curation.
+4.  **Isoform Diversity per Gene:** Isoforms per reference gene, and the known genes that gained novel isoforms.
+5.  **Reference Transcriptome:** Characterization of detected reference transcripts, including biotype distribution, transcript length, and exon structure.
+6.  **Novel Isoforms:** Description of newly identified transcripts and their supporting evidence.
+7.  **Genomic Context:** Visualization of transcript models and read coverage across representative genomic loci.
 
 Report generated automatically with the `integrativebioinformatics/pulposeq` pipeline.
 
@@ -1241,11 +1244,11 @@ Following transcriptome assembly with **Bambu** [^1], the extended annotations a
 
 [^1]: Chen, Ying, et al. "Context-aware transcript quantification from long-read RNA-seq data with Bambu." Nature methods 20.8 (2023): 1187-1195. https://doi.org/10.1038/s41592-023-01908-w
 
-1.  Transcripts were filtered once, before classification. Novel models without a strand or shorter than 500 nt were removed, and any transcript, reference or novel, with fewer than `--min_total_counts` counts summed across all samples (5 by default) was removed. Genes were kept if at least one of their transcripts was kept. A per-rule summary is stored in `transcriptome/curated/metadata/filter_summary.tsv`.
+1.  Transcripts were filtered once, before classification. Novel models without a strand or shorter than 500 nt were removed, and any transcript, reference or novel, with fewer than `--min_total_counts` counts summed across all samples (5 by default) was removed. The counts are Bambu's, or **oarfish**'s [^7] when the pipeline ran with `--run_oarfish`, in which case oarfish requantified every Bambu model (except novel models without a strand) from the same reads, with bootstrap replicates. Genes were kept if at least one of their transcripts was kept. A per-rule summary is stored in `transcriptome/curated/metadata/filter_summary.tsv` and shown under [Assembly Statistics].
 2.  Novel transcript isoforms were compared against the reference annotation using **GffCompare** [^2] and assessed for coding potential using **CPC2** [^3]. Isoforms were subsequently classified according to their GffCompare class code, coding-potential prediction, and the biotype of the associated reference gene.
 3.  Transcript structural features, including exon composition and transcript architecture, were characterized directly from the reference annotation and assembled GTF files using **rtracklayer** [^5].
 4.  Annotation files (GFT) and count matrices were restricted to the curated transcript set, and transcript classification and biotype information were incorporated into the final annotations.
-5.  Principal Component Analysis (PCA) and expression heatmaps of Bambu were regenerated using the curated transcriptome, enabling direct comparison with the corresponding results obtained from the initial assembly.
+5.  Transcript-level Principal Component Analysis (PCA) and expression heatmaps were drawn for every quantified model and for the curated transcriptome, from the same counts the filter used, enabling direct comparison between the two.
 6.  Per-base coverage profiles were exported as BigWig tracks for each sample, and selected genomic loci were visualized alongside transcript models using **plotgardener** [^6].
 7.  Finally, annotations, expression matrices, and transcript characterization metrics were consolidated into standardized metadata tables to facilitate downstream analyses. Summary statistics of the curated assembly are presented throughout the following sections of this report.
 
@@ -1256,6 +1259,8 @@ Following transcriptome assembly with **Bambu** [^1], the extended annotations a
 [^5]: Lawrence, Michael, Robert Gentleman, and Vincent Carey. "rtracklayer: an R package for interfacing with genome browsers." Bioinformatics 25.14 (2009): 1841-1842. https://doi.org/10.1093/bioinformatics/btp328
 
 [^6]: Kramer, Nicole E., et al. "Plotgardener: cultivating precise multi-panel figures in R." Bioinformatics 38.7 (2022): 2042-2045. https://doi.org/10.1093/bioinformatics/btac057
+
+[^7]: Zare Jousheghani, Zahra, Noor Pratap Singh, and Rob Patro. "Oarfish: Enhanced probabilistic modeling leads to improved accuracy in long read transcriptome quantification." Bioinformatics 41.Supplement_1 (2025): i304. https://doi.org/10.1093/bioinformatics/btaf240
 
 The final curated outputs are provided in `transcriptome/curated/`, sorted into `annotation/`, `counts/`, `metadata/` and `plots/`. Per-sample coverage tracks are available in `coverage/` as BigWig files, while genomic context visualizations can be found in `genomic_context/`.
 
@@ -1391,7 +1396,7 @@ The **Tracking Evidence** section summarizes the additional evidence available f
 
 ## Assembly Statistics
 
-This section provides an overview of the curated transcriptome assembly at the gene and transcript levels. All statistics are derived from the curated Bambu output and summarize the features that were detected, quantified, and retained after the validation workflow.
+This section provides an overview of the curated transcriptome assembly at the gene and transcript levels. All statistics are derived from the curated Bambu output and summarize the features that were detected, quantified, and retained after the validation workflow. Full-length and unique read support are always Bambu's, also when oarfish's counts drove the expression filter.
 
 Features are grouped into three categories:
 
@@ -1417,6 +1422,21 @@ metrics <- tryCatch(read.csv(params$bambu_metrics, stringsAsFactors = FALSE),
 vsum    <- tryCatch(read.csv(params$validation_summary, stringsAsFactors = FALSE),
                     error = function(e) NULL)
 
+# PREFILTER's per-rule summary: "# key: value" header lines, then a table.
+fsum_lines <- tryCatch(readLines(params$filter_summary), error = function(e) character(0))
+fsum_meta  <- grep("^# [a-z_]+: ", fsum_lines, value = TRUE)
+fsum_meta  <- setNames(sub("^# [a-z_]+: ", "", fsum_meta), sub("^# ([a-z_]+): .*$", "\\1", fsum_meta))
+fsum <- if (length(fsum_lines)) {
+  tryCatch(read.delim(text = fsum_lines[!startsWith(fsum_lines, "#")],
+                      stringsAsFactors = FALSE, check.names = FALSE),
+           error = function(e) NULL)
+} else NULL
+
+expression_source <- if (!is.na(fsum_meta["expression_source"])) fsum_meta[["expression_source"]] else "bambu"
+oarfish_ran       <- identical(expression_source, "oarfish")
+source_label      <- if (oarfish_ran) "oarfish" else "Bambu"
+min_total_counts  <- if (!is.na(fsum_meta["min_total_counts"])) fsum_meta[["min_total_counts"]] else NA_character_
+
 get_metric <- function(k) {
   if (is.null(metrics)) return(NA_character_)
   v <- metrics$value[metrics$metric == k]
@@ -1432,6 +1452,37 @@ cat(sprintf("**Novel discovery rate (NDR):** %s%s\n\n",
             if (identical(get_metric("ndr_requested"), "auto"))
               " — selected automatically by Bambu" else " — set explicitly"))
 
+cat(sprintf(paste("**Expression filter:** a transcript is kept if its %s counts, summed",
+                  "across all samples, reach **%s** (`--min_total_counts`). Novel models",
+                  "without a strand or shorter than %s nt are removed first.\n\n"),
+            source_label, ifelse(is.na(min_total_counts), "not recorded", min_total_counts),
+            ifelse(is.na(fsum_meta["min_novel_length_nt"]), "500", fsum_meta[["min_novel_length_nt"]])))
+
+if (!is.null(fsum)) {
+  # Each transcript is counted under the first rule it fails, so the removed rows
+  # add up to transcripts_in - transcripts_kept.
+  step_labels <- c(
+    transcripts_in                 = "Transcripts in",
+    removed_unstranded             = "Removed: novel, no strand",
+    removed_shorter_than_500nt     = "Removed: novel, shorter than 500 nt",
+    removed_below_min_total_counts = "Removed: below the expression filter",
+    transcripts_kept               = "Transcripts kept",
+    genes_in                       = "Genes in",
+    genes_kept                     = "Genes kept"
+  )
+  fmt <- function(x) ifelse(grepl("^[0-9]+$", x), format(suppressWarnings(as.numeric(x)), big.mark = ","), x)
+  ftab <- data.frame(
+    Step      = ifelse(fsum$step %in% names(step_labels), step_labels[fsum$step], fsum$step),
+    Reference = fmt(as.character(fsum$reference)),
+    Novel     = fmt(as.character(fsum$novel)),
+    Total     = fmt(as.character(fsum$total)),
+    check.names = FALSE
+  )
+  cat(knitr::kable(ftab, format = "markdown", align = "lrrr"), sep = "\n")
+  cat(paste("\n\nEach transcript is counted under the first rule it fails. Classification",
+            "and curation then remove novel models with a non-admitted class code.\n\n"))
+}
+
 if (!is.null(vsum)) {
   # Two decimals: 392,130 of 392,201 is 99.98%, and "100.0%" reads as a curation
   # that lost nothing at all.
@@ -1446,11 +1497,11 @@ if (!is.null(vsum)) {
     vtab$`Extended annotations` <- format(vsum$extended_annotations, big.mark = ",")
   }
   cat(knitr::kable(vtab, format = "markdown"), sep = "\n")
-  cat(paste("\n\n**Total quantified** is the expressed set: features carrying at least",
-            "one count in at least one sample, and the denominator recovery is measured",
-            "against. **Extended annotation** is every feature Bambu quantified against,",
-            "including those no read supports -- those are outside the curation and are",
-            "not counted as losses.\n"))
+  cat(sprintf(paste("\n\n**Total quantified** is the expressed set: features with any %s",
+                    "counts summed across all samples, and the denominator recovery is",
+                    "measured against. **Extended annotation** is every feature in Bambu's",
+                    "extended annotation, including those no read supports -- those are",
+                    "outside the curation and are not counted as losses.\n"), source_label))
 }
 cat("\n:::\n")
 ```
@@ -1532,7 +1583,7 @@ tx_support  <- data.frame(
 
 Bambu writes three transcript count matrices, and the second two are subsets of the first:
 
-- **Total**: every transcript with a non-zero estimated count.
+- **Total**: every curated transcript, i.e. every transcript that passed the expression filter (see *Run parameters and validation yield* above). When oarfish ran, some of them have no Bambu reads at all: oarfish's counts kept them, and they fall in *neither* below.
 - **Full-length support**: the transcript has reads spanning it end to end, from its start to its termination site.
 - **Unique support**: the transcript has reads compatible with it and with no other isoform, so those reads are assigned to it directly rather than shared out.
 
@@ -1790,16 +1841,278 @@ support_table(support_sets, category, "Category")
 
 ------------------------------------------------------------------------
 
+```{r}
+#| label: oarfish-prep
+#| include: false
+
+# Everything in this section is drawn only when oarfish ran. `oarfish_ran` comes
+# from filter_summary.tsv (run-metrics chunk); the tables are read defensively so
+# a missing file drops the section instead of failing the render.
+read_tsv_or_null <- function(path) {
+  if (is.null(path) || !nzchar(path) || !file.exists(path)) return(NULL)
+  tryCatch(read.delim(path, stringsAsFactors = FALSE, check.names = FALSE),
+           error = function(e) NULL)
+}
+osum <- if (oarfish_ran) read_tsv_or_null(params$oarfish_summary) else NULL
+rsup <- read_tsv_or_null(params$read_support)
+
+has_oarfish <- oarfish_ran && !is.null(rsup) && "oarfish_counts_total" %in% names(rsup)
+has_osum    <- has_oarfish && !is.null(osum) && nrow(osum) > 0
+has_infrv   <- has_oarfish && "oarfish_mean_infrv" %in% names(rsup) &&
+               any(is.finite(rsup$oarfish_mean_infrv))
+
+QUANT_LEVELS  <- c("Bambu and oarfish", "oarfish only", "Bambu only")
+# Quantification section: Okabe-Ito blue / vermillion / grey, so the transcripts
+# only one tool gave reads stand out against the bulk in every figure.
+QUANT_COLOURS <- setNames(c("#0072B2", "#D55E00", "#7F7F7F"), QUANT_LEVELS)
+
+if (has_oarfish) {
+  n_samples <- if (has_osum) nrow(osum) else NA_integer_
+  n_boot    <- if (has_osum && "bootstraps" %in% names(osum)) max(osum$bootstraps) else NA_integer_
+
+  quant <- rsup %>%
+    transmute(transcript_id = TXNAME,
+              status = ifelse(transcript_status == "novel", "Novel", "Annotated"),
+              bambu  = bambu_counts_total,
+              oarfish = oarfish_counts_total,
+              infrv  = if (has_infrv) oarfish_mean_infrv else NA_real_) %>%
+    mutate(group = factor(case_when(bambu > 0 & oarfish > 0 ~ "Bambu and oarfish",
+                                    oarfish > 0              ~ "oarfish only",
+                                    bambu > 0                ~ "Bambu only",
+                                    TRUE                     ~ NA_character_),
+                          levels = QUANT_LEVELS),
+           status = factor(status, levels = c("Annotated", "Novel"))) %>%
+    left_join(support_sets[, c("transcript_id", "category")], by = "transcript_id")
+  quant$category <- as.character(quant$category)
+  quant$category[is.na(quant$category)] <- "other biotypes"
+  quant$category <- factor(quant$category, levels = levels(support_sets$category))
+
+  n_oarfish_only <- sum(quant$group == "oarfish only", na.rm = TRUE)
+  rho_all  <- suppressWarnings(cor(quant$bambu, quant$oarfish, method = "spearman"))
+  both     <- quant$group %in% "Bambu and oarfish"
+  rho_both <- if (sum(both) > 2) suppressWarnings(cor(quant$bambu[both], quant$oarfish[both],
+                                                      method = "spearman")) else NA_real_
+}
+```
+
+```{r}
+#| label: oarfish-intro
+#| echo: false
+#| output: asis
+
+if (has_oarfish) {
+  cat("## Bambu vs oarfish\n\n")
+  cat(sprintf(paste(
+    "This run requantified every Bambu model, except novel models without a strand, with",
+    "**oarfish** from the same reads minimap2 aligned%s. oarfish's counts drove the expression",
+    "filter, so every curated table and figure in this report holds the transcripts oarfish",
+    "supports. Bambu's counts are kept alongside, and full-length and unique read support are",
+    "always Bambu's.\n\n"),
+    if (!is.na(n_boot) && n_boot > 0) sprintf(", with %d bootstrap replicates per sample", n_boot) else ""))
+  cat(paste(
+    "The two tools quantify differently. Bambu assigns reads from **genome** alignments, through",
+    "the read classes it built the models from. oarfish maps reads to **transcript sequences**",
+    "and shares them out between transcripts by expectation-maximisation, with a model of how",
+    "reads cover a transcript. Neither is a ground truth, so this section reports where they",
+    "agree and where they differ; nothing here filters transcripts.\n\n"))
+}
+```
+
+```{r}
+#| label: oarfish-samples-heading
+#| echo: false
+#| output: asis
+#| eval: !expr has_osum
+
+cat("### Per-sample agreement\n\n")
+```
+
+```{r}
+#| label: tbl-oarfish-samples
+#| tbl-cap: "**Per-sample comparison of oarfish and Bambu.** Mapping rate and assigned reads are oarfish's. Detection counts transcripts with any reads in that sample, over every model both tools quantified. The Jaccard index is *both* / *either*; the Spearman correlation is computed only over transcripts both tools detected in that sample."
+#| echo: false
+#| eval: !expr has_osum
+
+num_or_na <- function(x) suppressWarnings(as.numeric(x))
+osum %>%
+  transmute(Sample                      = sample,
+            `Mapping rate`              = sprintf("%.1f%%", 100 * num_or_na(mapping_rate)),
+            `Reads assigned`            = format(num_or_na(assigned_reads), big.mark = ","),
+            `Detected: Bambu`           = format(num_or_na(detected_bambu), big.mark = ","),
+            `Detected: oarfish`         = format(num_or_na(detected_oarfish), big.mark = ","),
+            `Detected: both`            = format(num_or_na(detected_both), big.mark = ","),
+            `Jaccard`                   = sprintf("%.3f", num_or_na(detection_jaccard)),
+            `Spearman (co-detected)`    = sprintf("%.3f", num_or_na(spearman_codetected))) %>%
+  knitr::kable(format = "markdown", align = "lrrrrrrr")
+```
+
+```{r}
+#| label: oarfish-samples-note
+#| echo: false
+#| output: asis
+#| eval: !expr has_osum
+
+cat(paste(
+  "::: callout-tip\n## How to read the table\n\n",
+  "- **Detection overlap (Jaccard)** asks whether the two tools agree on *which* transcripts",
+  "have any reads at all. It is sensitive to the many transcripts with one or two reads, where",
+  "a single read assigned differently changes the call.\n",
+  "- **Spearman over co-detected transcripts** asks whether, where both tools see expression,",
+  "they rank transcripts the same way. Transcripts only one tool detected are left out: a zero",
+  "from one tool is not a measurement of the same thing, and many tied zeros would dominate",
+  "the rank correlation.\n",
+  "- A low Jaccard with a high Spearman means the tools agree on the expressed transcripts and",
+  "differ mostly at the detection limit.\n",
+  "- oarfish's **mapping rate** is to transcript sequences only. Reads from introns, intergenic",
+  "regions or loci Bambu did not assemble have no target, so it is expected to be lower than",
+  "minimap2's rate against the genome.\n\n:::\n\n"))
+```
+
+```{r}
+#| label: oarfish-curated-heading
+#| echo: false
+#| output: asis
+#| eval: !expr has_oarfish
+
+cat("### Curated transcripts by quantification support\n\n")
+cat(sprintf(paste(
+  "Of the %s curated transcripts, **%s** have no Bambu reads in any sample and are in the",
+  "curated set on oarfish's counts alone (*oarfish only*). By construction they also have no",
+  "full-length or unique Bambu reads. A read that oarfish maps to a transcript sequence can come",
+  "from a similar transcript elsewhere, or from an unassembled source, so these transcripts are",
+  "worth a closer look before they are interpreted; the table below says where they are.\n\n"),
+  format(nrow(quant), big.mark = ","), format(n_oarfish_only, big.mark = ",")))
+```
+
+```{r}
+#| label: tbl-oarfish-curated
+#| tbl-cap: "**Curated transcripts by which tool gave them reads, per category.** Totals summed across all samples. A *Bambu only* column appears only if some curated transcript has no oarfish reads, which needs `--min_total_counts 0`."
+#| echo: false
+#| eval: !expr has_oarfish
+
+quant %>%
+  filter(!is.na(group)) %>%
+  count(status, category, group) %>%
+  tidyr::pivot_wider(names_from = group, values_from = n, values_fill = 0) %>%
+  { for (g in QUANT_LEVELS) if (!g %in% names(.)) .[[g]] <- 0L; . } %>%
+  mutate(Curated = `Bambu and oarfish` + `oarfish only` + `Bambu only`,
+         `% oarfish only` = sprintf("%.1f%%", 100 * `oarfish only` / Curated)) %>%
+  arrange(status, category) %>%
+  transmute(Status = as.character(status), Category = as.character(category),
+            Curated = format(Curated, big.mark = ","),
+            `Bambu and oarfish` = format(`Bambu and oarfish`, big.mark = ","),
+            `oarfish only` = format(`oarfish only`, big.mark = ","),
+            `Bambu only` = format(`Bambu only`, big.mark = ","),
+            `% oarfish only`) %>%
+  { if (all(trimws(.$`Bambu only`) == "0")) dplyr::select(., -`Bambu only`) else . } %>%
+  { knitr::kable(., format = "markdown", align = c("l", "l", rep("r", ncol(.) - 2))) }
+```
+
+```{r}
+#| label: fig-oarfish-vs-bambu
+#| fig-cap: !expr sprintf("**Bambu and oarfish totals for every curated transcript.** Counts summed across all samples, on pseudo-log axes so zeros stay on the plot; the dashed line is equality. Transcripts on the left edge have no Bambu reads (*oarfish only*). Spearman correlation over all curated transcripts %s; over those both tools gave reads %s.", ifelse(exists('rho_all') && is.finite(rho_all), sprintf('%.3f', rho_all), 'NA'), ifelse(exists('rho_both') && is.finite(rho_both), sprintf('%.3f', rho_both), 'NA'))
+#| eval: !expr has_oarfish
+#| fig-width: 7.5
+#| fig-height: 4
+
+pseudo10 <- scales::pseudo_log_trans(sigma = 1, base = 10)
+count_breaks <- function(lim) {
+  b <- c(0, 10^(0:ceiling(log10(max(lim[2], 1)))))
+  b[b <= max(lim[2], 1) * 1.01]
+}
+
+quant %>%
+  filter(!is.na(group)) %>%
+  ggplot(aes(x = bambu, y = oarfish, colour = group)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = "#9E9E9E", linewidth = 0.3) +
+  geom_point(size = 0.5, alpha = 0.35, stroke = 0) +
+  facet_wrap(~ status) +
+  scale_x_continuous(trans = pseudo10, breaks = count_breaks, labels = short_number) +
+  scale_y_continuous(trans = pseudo10, breaks = count_breaks, labels = short_number) +
+  scale_colour_manual(values = QUANT_COLOURS, drop = TRUE,
+                      guide = guide_legend(override.aes = list(size = 2, alpha = 1))) +
+  coord_equal() +
+  labs(title = "Bambu vs oarfish, curated transcripts",
+       x = "Bambu counts, all samples", y = "oarfish counts, all samples", colour = NULL) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+#| label: oarfish-infrv-heading
+#| echo: false
+#| output: asis
+#| eval: !expr has_infrv
+
+cat("### Quantification uncertainty\n\n")
+cat(paste(
+  "Each bootstrap replicate re-runs oarfish's estimate on resampled reads, so the spread of a",
+  "transcript's count across replicates measures how firmly the reads pin that count down.",
+  "It is summarised as the **inferential relative variance** (InfRV) [^8], computed per",
+  "sample as max(variance − mean, 0) / (mean + 5) + 0.01 over the replicates and then averaged",
+  "across samples, exactly as `fishpond::computeInfRV` does. The 0.01 is a floor: a transcript",
+  "at the floor varies no more than counting noise would make it. High values mark counts",
+  "oarfish could not assign with confidence, usually because the reads are compatible with",
+  "several similar isoforms. The + 5 in the denominator keeps InfRV near the floor for",
+  "lowly expressed transcripts, so InfRV is only comparable between transcripts at similar",
+  "expression.\n\n"))
+cat(paste(
+  "[^8]: Zhu, Anqi, et al. \"Nonparametric expression analysis using inferential replicate",
+  "counts.\" Nucleic Acids Research 47.18 (2019): e105. https://doi.org/10.1093/nar/gkz622\n\n"))
+```
+
+```{r}
+#| label: fig-oarfish-infrv
+#| fig-cap: "**Quantification uncertainty of every curated transcript.** Mean InfRV across samples against the mean oarfish count per sample; both axes logarithmic. InfRV depends on expression, so compare transcripts at similar counts: points well above the bulk at a given count are the ones whose reads oarfish could not assign with confidence. The InfRV floor is 0.01."
+#| eval: !expr has_infrv
+#| fig-width: 7.5
+#| fig-height: 3.8
+
+quant %>%
+  filter(!is.na(group), is.finite(infrv)) %>%
+  mutate(mean_count = oarfish / max(n_samples, 1, na.rm = TRUE)) %>%
+  filter(mean_count > 0) %>%
+  ggplot(aes(x = mean_count, y = infrv, colour = group)) +
+  geom_point(size = 0.5, alpha = 0.35, stroke = 0) +
+  facet_wrap(~ status) +
+  scale_x_log10_std() +
+  scale_y_log10(labels = scales::label_number(drop0trailing = TRUE, big.mark = ",")) +
+  scale_colour_manual(values = QUANT_COLOURS, drop = TRUE,
+                      guide = guide_legend(override.aes = list(size = 2, alpha = 1))) +
+  labs(title = "Quantification uncertainty, curated transcripts",
+       x = "Mean oarfish count per sample", y = "Mean InfRV", colour = NULL) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+#| label: tbl-oarfish-infrv
+#| tbl-cap: "**InfRV by category.** Median and 90th percentile of the mean InfRV, per category and quantification support. Categories differ in expression, and InfRV depends on expression, so read these alongside the figure."
+#| echo: false
+#| eval: !expr has_infrv
+
+quant %>%
+  filter(!is.na(group), is.finite(infrv)) %>%
+  group_by(Status = as.character(status), Category = as.character(category),
+           Support = as.character(group)) %>%
+  summarise(Transcripts = format(n(), big.mark = ","),
+            `Median InfRV` = sprintf("%.3f", median(infrv)),
+            `90th percentile` = sprintf("%.3f", unname(quantile(infrv, 0.9))),
+            .groups = "drop") %>%
+  arrange(Status, Category, Support) %>%
+  knitr::kable(format = "markdown", align = "lllrrr")
+```
+
+------------------------------------------------------------------------
+
 ## Sample-level Expression Clustering
 
-Bambu generates principal component analysis (PCA) plots and expression heatmaps to summarize relationships among samples based on transcript expression profiles.
+Principal component analysis (PCA) and expression heatmaps summarize how samples relate to each other through their transcript expression. Both are drawn at the transcript level, with Bambu's `plotBambu` method, from the **`r source_label`** counts that drove the expression filter: transcript CPM, restricted to the half of the transcripts that vary most across samples (standard deviation above the median), on a log2(CPM + 1) scale. The PCA is computed on those values; the heatmap shows the Spearman correlation between every pair of samples.
 
 The figures below are presented in two versions:
 
-- **Raw assembly** – generated directly from the initial Bambu assembly output.
-- **Curated assembly** – generated after transcript validation, classification, and metadata refinement.
+- **Every quantified model** – every transcript model `r source_label` quantified, before any filtering.
+- **Curated** – the curated transcripts only.
 
-Comparing the two sets of figures highlights the extent to which transcript filtering and validation influence sample clustering patterns, providing a direct assessment of the contribution of discarded transcript models to the overall expression signal.
+Comparing the two shows how much the filtered-out models contributed to the differences between samples.
 
 ```{r}
 #| label: plot-availability
@@ -1808,11 +2121,9 @@ Comparing the two sets of figures highlights the extent to which transcript filt
 plot_params <- list(
   raw_pca                 = params$raw_pca,
   raw_pca_grouped         = params$raw_pca_grouped,
-  raw_heatmap_gene        = params$raw_heatmap_gene,
   raw_heatmap_transcript  = params$raw_heatmap_transcript,
   post_pca                = params$post_pca,
   post_pca_grouped        = params$post_pca_grouped,
-  post_heatmap_gene       = params$post_heatmap_gene,
   post_heatmap_transcript = params$post_heatmap_transcript
 )
 
@@ -1838,10 +2149,10 @@ show_plots <- function(keys) {
 ```{r}
 #| label: fig-pca
 #| echo: false
-#| fig-cap: "Sample PCA before and after validation and curation."
+#| fig-cap: !expr sprintf("Transcript-level sample PCA from %s counts, before and after curation.", source_label)
 #| fig-subcap:
-#|   - "Raw assembly"
-#|   - "Validated and curated"
+#|   - "Every quantified model"
+#|   - "Curated"
 #| layout-ncol: 2
 
 show_plots(c("raw_pca", "post_pca"))
@@ -1852,47 +2163,29 @@ show_plots(c("raw_pca", "post_pca"))
 ```{r}
 #| label: fig-pca-grouped
 #| echo: false
-#| fig-cap: "Sample PCA coloured by group, before and after validation and curation."
+#| fig-cap: !expr sprintf("Transcript-level sample PCA from %s counts, coloured by group, before and after curation.", source_label)
 #| fig-subcap:
-#|   - "Raw assembly"
-#|   - "Validated and curated"
+#|   - "Every quantified model"
+#|   - "Curated"
 #| layout-ncol: 2
 
 show_plots(c("raw_pca_grouped", "post_pca_grouped"))
 ```
 :::
 
-### Expression Heatmaps
-
-::: panel-tabset
-#### Transcript level
+### Expression Heatmap
 
 ```{r}
 #| label: fig-heatmap-transcript
 #| echo: false
-#| fig-cap: "Transcript-level expression heatmap, before and after validation and curation."
+#| fig-cap: !expr sprintf("Sample-by-sample Spearman correlation of transcript expression from %s counts, before and after curation.", source_label)
 #| fig-subcap:
-#|   - "Raw assembly"
-#|   - "Validated and curated"
+#|   - "Every quantified model"
+#|   - "Curated"
 #| layout-ncol: 2
 
 show_plots(c("raw_heatmap_transcript", "post_heatmap_transcript"))
 ```
-
-#### Gene level
-
-```{r}
-#| label: fig-heatmap-gene
-#| echo: false
-#| fig-cap: "Gene-level expression heatmap, before and after validation and curation."
-#| fig-subcap:
-#|   - "Raw assembly"
-#|   - "Validated and curated"
-#| layout-ncol: 2
-
-show_plots(c("raw_heatmap_gene", "post_heatmap_gene"))
-```
-:::
 
 ------------------------------------------------------------------------
 
@@ -3695,9 +3988,14 @@ sup_uniq  <- read_support(params$u_counts_transcript,  "reads_unique")
 
 support <- NULL
 if (!is.null(sup_total) && !is.null(sup_full) && !is.null(sup_uniq)) {
+  # The full-length and unique tables list only transcripts with at least one
+  # such read, so a transcript missing from them has zero, not an unknown value.
+  # An inner join would drop exactly the low tail this figure is about.
   support <- sup_total %>%
-    inner_join(sup_full, by = "transcript_id") %>%
-    inner_join(sup_uniq, by = "transcript_id") %>%
+    left_join(sup_full, by = "transcript_id") %>%
+    left_join(sup_uniq, by = "transcript_id") %>%
+    mutate(reads_full_length = coalesce(reads_full_length, 0),
+           reads_unique      = coalesce(reads_unique, 0)) %>%
     inner_join(novel_tx[, c("qry_id", "class_code", "biotype", "classification",
                             "exon")],
                by = c("transcript_id" = "qry_id")) %>%

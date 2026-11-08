@@ -329,7 +329,7 @@ exactly these transcripts (gene tables: genes with at least one of them).
 
 | File | Description |
 |--------------------------------|----------------------------------------|
-| `transcript_read_support.tsv` | One row per curated transcript: `bambu_counts_total`, `full_length_reads_total` and `unique_reads_total` (Bambu, summed across samples), `full_length_supported` (`TRUE` if at least one read covers the transcript's whole structure), and `oarfish_counts_total` when oarfish ran. Reported, not used to filter. A transcript with `full_length_supported = FALSE` is inferred from partial reads only. |
+| `transcript_read_support.tsv` | One row per curated transcript: `bambu_counts_total`, `full_length_reads_total` and `unique_reads_total` (Bambu, summed across samples), `full_length_supported` (`TRUE` if at least one read covers the transcript's whole structure), and, when oarfish ran, `oarfish_counts_total` and `oarfish_mean_infrv` (with at least two bootstrap replicates; see below). Reported, not used to filter. A transcript with `full_length_supported = FALSE` is inferred from partial reads only. |
 | `validation_summary.csv` | The curation yield, one row per feature type. See below. |
 | `filter_summary.tsv`, `prefilter_kept_transcripts.txt` | From the [expression filter](#expression-filter). |
 | Novel and annotated metadata tables | See [Transcript metadata](#transcript-metadata). |
@@ -338,8 +338,16 @@ exactly these transcripts (gene tables: genes with at least one of them).
 
 | File | Description |
 |--------------------------------|----------------------------------------|
-| `pca_validated.png`, `pca_grouped_validated.png` | Bambu's PCA, regenerated from the curated transcriptome. |
-| `heatmap_gene_validated.png`, `heatmap_transcript_validated.png` | Bambu's expression heatmaps, regenerated from the curated transcriptome. |
+| `pca_all_models.png`, `pca_grouped_all_models.png` | Transcript-level PCA over every model the expression source quantified, before filtering. |
+| `heatmap_transcript_all_models.png` | Sample-by-sample Spearman correlation of transcript expression, every quantified model. |
+| `pca_validated.png`, `pca_grouped_validated.png` | The same PCA over the curated transcripts. |
+| `heatmap_transcript_validated.png` | The same heatmap over the curated transcripts. |
+
+All six are drawn with Bambu's `plotBambu` method (CPM, transcripts with a standard
+deviation above the median, log2(CPM + 1)) from the counts that drove the
+[expression filter](#expression-filter): oarfish's when it ran, Bambu's otherwise.
+They are transcript-level only. Bambu's own plots from the raw assembly, including
+its gene-level heatmap, stay in `transcriptome/bambu/`.
 
 > [!NOTE]
 > The pipeline's own metadata lives in `annotations_final.gtf` and in the metadata CSVs.
@@ -349,10 +357,11 @@ exactly these transcripts (gene tables: genes with at least one of them).
 | Column | Meaning |
 |---|---|
 | `feature_type` | `transcript` or `gene`. |
-| `curated_set` | Features kept by curation **and** carrying at least one count. |
-| `total_quantified` | Features with at least one count in at least one sample. The denominator `recovery` is measured against. |
-| `extended_annotations` | Every feature Bambu quantified against the extended annotation, including those no read supports. |
+| `curated_set` | Features kept by curation **and** carrying counts in the expression source. |
+| `total_quantified` | Features with any counts in the expression source, summed across samples. The denominator `recovery` is measured against. |
+| `extended_annotations` | Every feature in Bambu's extended annotation, including those no read supports. |
 | `recovery` | `curated_set / total_quantified`. |
+| `expression_source` | `bambu`, or `oarfish` when the pipeline ran with `--run_oarfish`. Both counts columns come from this source, so with oarfish every curated transcript is counted, including those Bambu gave no reads. |
 
 Recovery is measured against the expressed features rather than against
 `extended_annotations`, because Bambu quantifies against every reference feature
@@ -450,6 +459,17 @@ depth and on how each tool handles ambiguous reads, so do not use them to rank o
 against the other. The pipeline warns only when they point to a technical error
 (co-detected Spearman below 0.1, detection overlap below 0.05, or no shared
 transcripts), which usually means mismatched sample names or transcript IDs.
+
+**Quantification uncertainty.** With at least two bootstrap replicates,
+`transcript_read_support.tsv` also carries `oarfish_mean_infrv`, the inferential
+relative variance (Zhu et al. 2019) of each curated transcript, computed as
+`fishpond::computeInfRV` does: per sample, `max(variance - mean, 0) / (mean + 5) + 0.01`
+over the replicates, then the mean across samples. 0.01 is the floor (no more spread
+than counting noise); high values mark counts oarfish could not assign with
+confidence, usually because the reads fit several similar isoforms. The `+ 5` keeps
+InfRV near the floor for lowly expressed transcripts, so compare transcripts at
+similar counts. The report plots it in its
+*Bambu vs oarfish* section.
 
 ## `transcriptome/classification/` (novel transcript classification)
 

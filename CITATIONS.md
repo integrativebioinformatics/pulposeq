@@ -23,6 +23,9 @@
 - [oarfish](https://doi.org/10.1093/bioinformatics/btaf240)
   > Zare Jousheghani Z, Singh NP, Patro R. Oarfish: enhanced probabilistic modeling leads to improved accuracy in long read transcriptome quantification. Bioinformatics. 2025 Jul;41(Supplement_1):i304. doi: 10.1093/bioinformatics/btaf240. PMCID: PMC12261437.
 
+- [fishpond (InfRV)](https://doi.org/10.1093/nar/gkz622)
+  > Zhu A, Srivastava A, Ibrahim JG, Patro R, Love MI. Nonparametric expression analysis using inferential replicate counts. Nucleic Acids Res. 2019;47(18):e105. doi: 10.1093/nar/gkz622. PMCID: PMC6765120.
+
 - [GffCompare/GffRead](https://doi.org/10.12688/f1000research.23297.2)
   > Pertea G, Pertea M. GFF Utilities: GffRead and GffCompare. F1000Res. 2020 Apr 28;9:ISCB Comm J-304. doi: 10.12688/f1000research.23297.2. PMID: 32489650; PMCID: PMC7222033.
 

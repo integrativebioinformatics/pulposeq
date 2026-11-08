@@ -49,6 +49,7 @@ workflow PULPOSEQ {
     ch_oarfish_cpm          = channel.value([])
     ch_oarfish_tpm          = channel.value([])
     ch_oarfish_bootstraps   = channel.value([])
+    ch_oarfish_summary      = channel.value([])
 
     // The three structural skips are nested, because each stage consumes the last
     // one's output: nothing downstream of minimap2 can run without alignments, and
@@ -165,6 +166,7 @@ workflow PULPOSEQ {
             // list stands in so curation is not left waiting for a missing file
             ch_oarfish_tpm        = QUANTIFICATION.out.tpm_transcript.ifEmpty([])
             ch_oarfish_bootstraps = QUANTIFICATION.out.bootstraps.ifEmpty([])
+            ch_oarfish_summary    = QUANTIFICATION.out.summary
             ch_versions = ch_versions.mix(QUANTIFICATION.out.versions)
         }
 
@@ -283,13 +285,17 @@ workflow PULPOSEQ {
         ch_versions = ch_versions.mix(GENOMIC_CONTEXT.out.versions)
 
         //
-        // Regenerate the Bambu PCA and heatmaps from the validated transcriptome
+        // Transcript-level PCA and heatmap, every model and the curated set, from
+        // the expression source (oarfish when it ran, Bambu otherwise), and the yield
         //
         VALIDATE_BAMBU_OUTPUTS (
             ASSEMBLY.out.rds_transcript,
             ASSEMBLY.out.rds_gene,
             CURATE.out.counts_transcript_validated,
             CURATE.out.counts_gene_validated,
+            ch_oarfish_counts,
+            ch_oarfish_gene,
+            ch_oarfish_cpm,
             file("${projectDir}/bin/validate_bambu_out.R", checkIfExists: true)
         )
         ch_versions = ch_versions.mix(VALIDATE_BAMBU_OUTPUTS.out.versions)
@@ -312,16 +318,17 @@ workflow PULPOSEQ {
             GENOMIC_CONTEXT.out.figures.ifEmpty([]),
             GENOMIC_CONTEXT.out.intronic_candidates,
             GENOMIC_CONTEXT.out.intronic_figures.ifEmpty([]),
-            ASSEMBLY.out.pca,
-            ASSEMBLY.out.pca_grouped,
-            ASSEMBLY.out.h_gene,
-            ASSEMBLY.out.h_transcript,
+            VALIDATE_BAMBU_OUTPUTS.out.pca_all,
+            VALIDATE_BAMBU_OUTPUTS.out.pca_grouped_all,
+            VALIDATE_BAMBU_OUTPUTS.out.h_transcript_all,
             VALIDATE_BAMBU_OUTPUTS.out.pca,
             VALIDATE_BAMBU_OUTPUTS.out.pca_grouped,
-            VALIDATE_BAMBU_OUTPUTS.out.h_gene,
             VALIDATE_BAMBU_OUTPUTS.out.h_transcript,
             ASSEMBLY.out.bambu_metrics,
             VALIDATE_BAMBU_OUTPUTS.out.validation_summary,
+            PREFILTER.out.summary,
+            CURATE.out.read_support,
+            ch_oarfish_summary,
             file("${projectDir}/bin/report.qmd", checkIfExists: true)
         )
         ch_versions = ch_versions.mix(RENDER_REPORT.out.versions)
