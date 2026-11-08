@@ -81,12 +81,24 @@ gene_id <- unname(tx2gene[tx_names])
 # --- Tables in Bambu's layout ----------------------------------------------------
 
 write_tsv <- function(tab, path) utils::write.table(tab, path, sep = "\t", quote = FALSE, row.names = FALSE)
-as_bambu_layout <- function(m) data.frame(TXNAME = tx_names, GENEID = gene_id, m, check.names = FALSE)
+
+# Numbers are written with 17 significant digits, enough to read back the exact
+# same double. write.table's default of 15 would round oarfish's estimates (for
+# example 2.4999999999999996 to 2.5), and PREFILTER compares their sums with
+# --min_total_counts exactly, so a rounded copy could decide a transcript at the
+# threshold differently from the values oarfish wrote.
+full_precision <- function(m) {
+    out <- matrix(formatC(m, digits = 17, format = "g"), nrow = nrow(m), dimnames = dimnames(m))
+    trimws(out)
+}
+as_bambu_layout <- function(m) {
+    data.frame(TXNAME = tx_names, GENEID = gene_id, full_precision(m), check.names = FALSE)
+}
 
 write_tsv(as_bambu_layout(counts), "oarfish_counts_transcript.txt")
 
 gene_counts <- rowsum(counts, gene_id, reorder = TRUE)
-write_tsv(data.frame(GENEID = rownames(gene_counts), gene_counts, check.names = FALSE),
+write_tsv(data.frame(GENEID = rownames(gene_counts), full_precision(gene_counts), check.names = FALSE),
           "oarfish_counts_gene.txt")
 
 lib_size <- colSums(counts)
