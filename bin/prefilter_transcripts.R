@@ -179,10 +179,16 @@ total[is.na(total)] <- 0
 novel_strand <- unname(models$strand[tx$TXNAME])
 novel_length <- unname(models$length[tx$TXNAME])
 
+# Counts from Bambu and oarfish are model estimates, so a transcript backed by
+# exactly 5 reads can come back as 4.9999999999999. The tolerance keeps
+# floating-point noise, and the rounding of a table written to text, from deciding
+# whether a transcript is kept.
+COUNT_TOLERANCE <- 1e-6
+
 unstranded <- is_novel & !(novel_strand %in% c("+", "-"))
 too_short  <- is_novel & !unstranded & novel_length < MIN_NOVEL_LENGTH
 too_short[is.na(too_short)] <- FALSE
-low_expr   <- !unstranded & !too_short & total < opt$min_total_counts
+low_expr   <- !unstranded & !too_short & total < opt$min_total_counts - COUNT_TOLERANCE
 keep       <- !(unstranded | too_short | low_expr)
 
 kept_tx    <- tx$TXNAME[keep]

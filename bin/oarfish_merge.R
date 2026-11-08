@@ -156,9 +156,13 @@ index_n <- function(category) {
     if (length(n) == 1) n else NA
 }
 
-bambu_samples <- setdiff(names(bambu), c("TXNAME", "GENEID"))
-bambu_mat <- as.matrix(bambu[, bambu_samples, drop = FALSE])
+# Bambu names its sample columns after the BAM files ("<sample>.bam"); oarfish's
+# files are named after the sample alone. Matched without the extension.
+bambu_columns <- setdiff(names(bambu), c("TXNAME", "GENEID"))
+bambu_mat <- as.matrix(bambu[, bambu_columns, drop = FALSE])
 rownames(bambu_mat) <- bambu$TXNAME
+bambu_samples <- sub("\\.bam$", "", bambu_columns)
+colnames(bambu_mat) <- bambu_samples
 shared_tx <- intersect(tx_names, rownames(bambu_mat))
 
 # Spearman correlation over transcripts either tool saw reads for. Leaving out the
