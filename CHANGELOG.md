@@ -12,7 +12,7 @@ Initial release of integrativebioinformatics/pulposeq, created with the [nf-core
 - `PREFILTER` step (`bin/prefilter_transcripts.R`): the one place transcripts are filtered, right after Bambu and before classification. It removes unstranded novel models, novel models shorter than 500 nt, and any transcript whose counts summed across all samples fall below the new `--min_total_counts` parameter (default 5). It writes a per-rule `filter_summary.tsv`.
 - `--min_total_counts` parameter.
 - Optional oarfish quantification (`--run_oarfish`, `--oarfish_num_bootstraps`), using the nf-core `oarfish/readmode` module. oarfish quantifies every Bambu model except unstranded novel ones, on the same reads minimap2 aligns, with bootstrap replicates. When it runs, its counts replace Bambu's as the expression source for `PREFILTER`. New local modules `OARFISH_INDEX_FASTA` and `OARFISH_MERGE` (`bin/oarfish_merge.R`), and an `oarfish/` output folder with per-sample results and `oarfish_summary.tsv`.
-- Resource settings for the `process_high` label, used by the nf-core oarfish module, which pulposeq did not define before.
+- Resource settings for the `process_high` label, used by the nf-core oarfish module, which pulposeq did not define before, checked against a test-run trace. `CURATE` gets 8 GB when oarfish runs (it loads the bootstrap replicates) and keeps 2 GB otherwise.
 - `CURATE` step (`bin/curate_transcripts.R`): writes the final transcript set. Every curated table and GTF, Bambu's and oarfish's, holds exactly the same transcripts. Adds `transcript_read_support.tsv` (Bambu total, full-length and unique reads per transcript, `full_length_supported`, and the oarfish total when oarfish ran) and, with oarfish, curated count, CPM, TPM (PacBio) and gene tables plus a `SummarizedExperiment` with bootstrap replicates (`infRep1..N`, fishpond layout).
 - `oarfish_summary.tsv` compares oarfish with Bambu as two labelled diagnostics: detection overlap (detected by each, by both, Jaccard) and the Spearman correlation over transcripts both tools detected. It warns only for clearly broken runs.
 - Report section *Bambu vs oarfish* (only when oarfish ran): per-sample agreement table, curated transcripts by which tool gave them reads (including those kept on oarfish's counts alone), a Bambu-vs-oarfish scatter, and quantification uncertainty from the bootstraps (mean InfRV per transcript, added to `transcript_read_support.tsv` as `oarfish_mean_infrv`).
@@ -29,6 +29,7 @@ Initial release of integrativebioinformatics/pulposeq, created with the [nf-core
 
 ### `Fixed`
 
+- `VALIDATE_BAMBU_OUTPUTS` memory raised from 2 GB to 8 GB: it peaked at 1.7 GB on a chromosome 1 test run, leaving no headroom for a whole-genome annotation.
 - Report: the novel read-support fraction figure joined the full-length and unique tables with an inner join. Those tables list only transcripts with at least one such read, so novel models with no full-length or no unique read were left out of the figure, hiding its low tail. They now count as 0.
 
 ### `Dependencies`
