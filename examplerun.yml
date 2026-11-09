@@ -138,7 +138,33 @@ annotation: "/your/path/to/references/annotation.release.chr.gtf"
 #  Transcript discovery
 # ------------------------------------------------------------------------------
 # Novel discovery rate threshold for Bambu. Leave null to let Bambu choose one from
-# the data; the value it selects is recorded in results/bambu/bambu_run_metrics.csv.
+# the data; the value it selects is recorded in results/transcriptome/bambu/bambu_run_metrics.csv.
 # Pin it when comparing runs, since a shifting NDR makes before/after comparisons
 # meaningless.
 ndr: null            # e.g. 0.2
+
+# ------------------------------------------------------------------------------
+#  Expression filter
+# ------------------------------------------------------------------------------
+# A transcript, reference or novel, is kept only if its counts summed across ALL
+# samples reach this value. The counts are Bambu's, or oarfish's when run_oarfish
+# is true. Novel models without a strand or shorter than 500 nt are removed first.
+# Genes are kept if at least one of their transcripts is kept. The per-rule result
+# is written to results/transcriptome/curated/metadata/filter_summary.tsv.
+min_total_counts: 5          # default; 0 keeps every transcript, including zero-count ones
+
+# ------------------------------------------------------------------------------
+#  Quantification with oarfish (optional)
+# ------------------------------------------------------------------------------
+# Also quantify every Bambu model (except novel models without a strand) with
+# oarfish, from the same reads minimap2 aligned. When true, oarfish's counts decide
+# the expression filter above, so the curated transcript set can differ from a
+# Bambu-only run; Bambu's counts and full-length/unique read support are still
+# reported alongside. Needs minimap2 and Bambu (not valid with skip_minimap2 or
+# skip_bambu). oarfish's --seq-tech follows `library` and `map_hq`.
+run_oarfish: false
+
+# Bootstrap replicates per sample, used for the uncertainty (InfRV) in the report
+# and the curated SummarizedExperiment (infRep1..N, the layout fishpond expects).
+# 20-30 is the usual range; 0 turns them off. Ignored when run_oarfish is false.
+oarfish_num_bootstraps: 30
