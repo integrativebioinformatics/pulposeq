@@ -68,7 +68,7 @@ format:
 
             <footer class="report-footer">
                 <div class="footer-logos">
-                    <img src="https://imgur.com/cbsEIqD.png" alt="Logos">
+                    <img src="https://imgur.com/Uc5tUSw.png" alt="Logos">
                 </div>
             </footer>
 execute:
@@ -4202,4 +4202,4 @@ embed_figures(gc_flagged, "figure", "qry_id", function(r) {
           r$qry_id, host, r$compared_gene_biotype, struct,
           format(round(r$counts_total), big.mark = ","), scope)
 })
-```
+```
