@@ -14,7 +14,7 @@ easier to plan around than to discover in the results.
 ### Eukaryotic organisms
 
 Splice-aware alignment, the intron-based gffcompare class codes the classification
-depends on, and CPC2's coding-potential model all assume a eukaryotic
+depends on, the lncRNA discovery criteria, and CPC2's coding-potential model all assume a eukaryotic
 transcriptome. The pipeline has no meaningful behaviour on prokaryotic data.
 
 Reference annotations must come from **Ensembl or GENCODE**. Other sources use
