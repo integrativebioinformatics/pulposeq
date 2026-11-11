@@ -213,7 +213,7 @@ written to `transcriptome/curated/metadata/filter_summary.tsv`.
 alignments to the genome; oarfish maps each sample's reads directly to transcript
 sequences, with its built-in mapper, and estimates how many reads each transcript
 produced. It also computes bootstrap replicates (`oarfish_num_bootstraps`, default
-`30`), which measure how uncertain each estimate is.
+`20`), which measure how uncertain each estimate is.
 
 **What oarfish quantifies against.** Every model Bambu assembled: every reference
 transcript and every novel model, before any filtering. That way, reads from models
