@@ -130,7 +130,7 @@ After seeting up the samplesheet, follow up to set the pipeline parameters.
 | `ndr` | Bambu's novel discovery rate. Leave unset for Bambu's own automatic choice (see [below](#novel-discovery-rate)) |
 | `min_total_counts` | Keep a transcript only if its counts, summed across all samples, reach this value (default `5`). Applies to reference and novel transcripts (see [below](#expression-filter)) |
 | `run_oarfish` | Also quantify every Bambu model with oarfish (default `false`). When on, oarfish counts decide expression in the filter above (see [below](#oarfish)) |
-| `oarfish_num_bootstraps` | Bootstrap replicates oarfish computes per sample (default `30`; `0` turns them off) |
+| `oarfish_num_bootstraps` | Bootstrap replicates oarfish computes per sample (default `20`; `0` turns them off) |
 
 ### Choosing which NanoComp reports to run
 
