@@ -32,9 +32,7 @@ We can describe each step of the workflow as follows:
 
 ## Usage
 
-pulposeq is compatible with **Ensembl or GENCODE** reference genomes and annotations. Transcript and gene biotypes are read directly from the annotation you supply, so no Ensembl release or BioMart dataset needs to be declared.
-
-Coding potential is predicted with [CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone"), which is organism-agnostic — so **the pipeline is not restricted to a fixed species list**. Any eukaryote with an Ensembl or GENCODE annotation is in scope; splice-aware alignment and the intron-based gffcompare class codes are what make the eukaryotic assumption, not the predictor.
+pulposeq is designed compatible with **Ensembl or GENCODE** reference eukaryote genomes and annotations. Transcript and gene biotypes are read directly from the annotation you supply, so no Ensembl release or BioMart dataset needs to be declared.
 
 See [Coding potential](docs/usage.md#coding-potential).
 
