@@ -7,7 +7,7 @@ authors:
   - family-names: Mamede
     given-names: Izabela
     orcid: "https://orcid.org/0000-0002-0707-5588"
-  - family-names: Freitas
+  - family-names: Freitas Lacerda
     given-names: Lucas
     orcid: "https://orcid.org/0009-0007-4564-5389"
   - family-names: Urquiza-Zurich
@@ -22,12 +22,11 @@ authors:
   - family-names: Cavalcante
     given-names: João Vitor
     orcid: "https://orcid.org/0000-0001-7513-7376"
-  - family-names: Dalmolin
-    given-names: Rodrigo Juliani Siqueira
+  - family-names: Siqueira Dalmolin
+    given-names: Rodrigo Juliani
     orcid: "https://orcid.org/0000-0002-1688-6155"
-  - family-names: Rêgo
-    name-particle: do
-    given-names: Thaís Gaudencio
+  - family-names: Gaudencio
+    given-names: Thaís
     orcid: "https://orcid.org/0000-0002-6608-4900"
   - family-names: Maracaja-Coutinho
     given-names: Vinicius
