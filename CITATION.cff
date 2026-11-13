@@ -1,0 +1,38 @@
+cff-version: 1.1.0
+message: "If you use pulposeq, please cite it as below."
+authors:
+  - family-names: Borges
+    given-names: Bárbara
+    # orcid: "https://orcid.org/0009-0002-1064-0338"
+  - family-names: Mamede
+    given-names: Izabela
+    orcid: "https://orcid.org/0000-0002-0707-5588"
+  - family-names: Freitas
+    given-names: Lucas
+    orcid: "https://orcid.org/0009-0007-4564-5389"
+  - family-names: Urquiza-Zurich
+    given-names: Sebastián
+    orcid: "https://orcid.org/0000-0002-8064-330X"
+  - family-names: Silva
+    given-names: Joyce Karoline
+    orcid: "https://orcid.org/0000-0002-8039-9706"
+  - family-names: Medeiros de Azevedo
+    given-names: Gleison
+    orcid: "https://orcid.org/0009-0003-4438-2135"
+  - family-names: Cavalcante
+    given-names: João Vitor
+    orcid: "https://orcid.org/0000-0001-7513-7376"
+  - family-names: Dalmolin
+    given-names: Rodrigo Juliani Siqueira
+    orcid: "https://orcid.org/0000-0002-1688-6155"
+  - family-names: Rêgo
+    name-particle: do
+    given-names: Thaís Gaudencio
+    orcid: "https://orcid.org/0000-0002-6608-4900"
+  - family-names: Maracaja-Coutinho
+    given-names: Vinicius
+    orcid: "https://orcid.org/0000-0002-8873-9381"
+title:integrativebioinformatics/pulposeq: v1.0.0
+version: v.1.0.0
+date-released: 2026-11-13
+                                
