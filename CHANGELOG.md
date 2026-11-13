@@ -34,6 +34,8 @@ Initial release of integrativebioinformatics/pulposeq, created with the [nf-core
 
 ### `Dependencies`
 
+- Local modules use the released container image `itsiaguara/pulposeq:1.0.0` (Docker Hub) instead of `itsiaguara/pulposeq:test`. Same image contents (digest `sha256:0b6f7575...`).
+
 ### `Deprecated`
 
 ### `Removed`
