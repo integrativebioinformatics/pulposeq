@@ -3,7 +3,7 @@ message: "If you use pulposeq, please cite it as below."
 authors:
   - family-names: Borges
     given-names: Bárbara
-    # orcid: "https://orcid.org/0009-0002-1064-0338"
+    orcid: "https://orcid.org/0009-0002-1064-0338"
   - family-names: Mamede
     given-names: Izabela
     orcid: "https://orcid.org/0000-0002-0707-5588"
