@@ -2,8 +2,8 @@ process RENDER_REPORT {
     label 'process_reports'
 
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
-        'docker://itsiaguara/pulposeq:test':
-        'docker.io/itsiaguara/pulposeq:test' }"
+        'docker://itsiaguara/pulposeq:1.0.0':
+        'docker.io/itsiaguara/pulposeq:1.0.0' }"
 
     input:
     // bambu outputs
