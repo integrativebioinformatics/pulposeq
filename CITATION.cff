@@ -1,4 +1,4 @@
-cff-version: 1.1.0
+cff-version: 1.2.0
 message: "If you use pulposeq, please cite it as below."
 authors:
   - family-names: Borges
@@ -32,7 +32,7 @@ authors:
   - family-names: Maracaja-Coutinho
     given-names: Vinicius
     orcid: "https://orcid.org/0000-0002-8873-9381"
-title:integrativebioinformatics/pulposeq: v1.0.0
-version: v.1.0.0
+title: "integrativebioinformatics/pulposeq"
+version: 1.0.0
 date-released: 2026-11-13
-                                
+url: "https://github.com/integrativebioinformatics/pulposeq"
