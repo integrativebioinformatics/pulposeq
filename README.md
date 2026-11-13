@@ -1,4 +1,5 @@
 ## integrativebioinformatics/pulposeq <img src="figures/logo.svg" align=right height="200px"/>
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24205879.svg)](https://doi.org/10.5281/zenodo.24205879)
 [![Open in GitHub Codespaces](https://img.shields.io/badge/Open_In_GitHub_Codespaces-black?labelColor=grey&logo=github)](https://github.com/codespaces/new/integrativebioinformatics/pulposeq) [![Nextflow](https://img.shields.io/badge/version-%E2%89%A526.04.0-green?style=flat&logo=nextflow&logoColor=white&color=%230DC09D&link=https%3A%2F%2Fnextflow.io)](https://www.nextflow.io/) [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/) [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 
 `pulposeq` is a Nextflow pipeline designed for isoform-level lncRNA discovery and characterization from long-read RNA-seq data. The workflow encompasses QC, mapping, transcriptome assembly and quantification, followed by a detailed final characterization of the entire transcriptome with particular emphasis on lncRNA structure and isoforms across known annotations and novel candidates.
@@ -115,6 +116,8 @@ The `work/` directory holds your actual results alongside every intermediate exe
 ## Citations
 
 If you use pulposeq in your research, please consider citing it.
+
+Borges, Barbara et al. integrativebioinformatics/pulposeq. Zenodo https://doi.org/10.5281/ZENODO.24205879 (2026).
 
 This pipeline uses code and infrastructure developed and maintained by the [nf-core](https://nf-co.re) initative, and reused here under the [MIT license](https://github.com/nf-core/tools/blob/master/LICENSE).
 
