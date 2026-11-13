@@ -192,6 +192,31 @@ def restrandingActive() {
 }
 
 //
+// Whether oarfish runs. Compared as a string, like --stranded_library, so a
+// CLI-supplied "false" is not read as true.
+//
+def oarfishEnabled() {
+    return params.run_oarfish?.toString()?.toLowerCase() == 'true'
+}
+
+//
+// oarfish's --seq-tech, from the library type. It selects oarfish's read-mapping
+// preset: map-ont for both ONT libraries, map-hifi or map-pb for PacBio. For PacBio
+// it follows --map_hq, the switch that already chooses minimap2's splice:hq: unset
+// or true reads the data as HiFi, false as older, noisier PacBio reads.
+//
+def oarfishSeqTech() {
+    if (params.library == 'ONT_cDNA') {
+        return 'ont-cdna'
+    }
+    if (params.library == 'ONT_DRS') {
+        return 'ont-drna'
+    }
+    def hq = params.map_hq == null || params.map_hq?.toString()?.toLowerCase() == 'true'
+    return hq ? 'pac-bio-hifi' : 'pac-bio'
+}
+
+//
 // Check and validate pipeline parameters
 //
 def validateInputParameters() {
@@ -349,6 +374,27 @@ def validateInputParameters() {
         if ((params.ndr as double) < 0 || (params.ndr as double) > 1) {
             error("--ndr must be between 0 and 1, got: ${params.ndr}")
         }
+    }
+
+    // The expression filter threshold is a count, so it cannot be negative
+    if (params.min_total_counts == null || (params.min_total_counts as double) < 0) {
+        error("--min_total_counts must be a number >= 0, got: ${params.min_total_counts}")
+    }
+
+    // oarfish quantifies against Bambu's transcript models, so it needs both
+    // alignment and Bambu to run
+    def skips_bambu = params.skip_minimap2?.toString()?.toLowerCase() == 'true' ||
+                      params.skip_bambu?.toString()?.toLowerCase() == 'true'
+    if (oarfishEnabled() && skips_bambu) {
+        error("--run_oarfish needs Bambu's transcript models, so it cannot be combined with --skip_minimap2 or --skip_bambu.")
+    }
+
+    def bootstraps = params.oarfish_num_bootstraps?.toString()
+    if (!bootstraps?.isInteger() || (bootstraps as int) < 0) {
+        error("--oarfish_num_bootstraps must be a whole number >= 0, got: ${params.oarfish_num_bootstraps}")
+    }
+    if (oarfishEnabled() && (bootstraps as int) == 0) {
+        log.warn("--oarfish_num_bootstraps 0: oarfish will produce no bootstrap replicates, so no uncertainty estimates.")
     }
 }
 

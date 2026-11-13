@@ -1,0 +1,48 @@
+name: "oarfish_index_fasta"
+description: >-
+  Write the transcript sequences oarfish quantifies against: every reference
+  transcript and every stranded novel model in Bambu's extended annotation, as two
+  FASTA files (reference for --annotated, novel for --novel). Unstranded novel
+  models are left out.
+keywords:
+  - oarfish
+  - transcriptome
+  - fasta
+  - gffread
+tools:
+  - gffread:
+      description: GFF/GTF utility providing format conversions, filtering, FASTA sequence extraction and more.
+      homepage: https://github.com/gpertea/gffread
+      doi: 10.12688/f1000research.23297.1
+      licence: ["MIT"]
+
+input:
+  - gtf:
+      type: file
+      description: Bambu's extended annotation (every reference transcript plus every novel model).
+      pattern: "BambuOutput_extended_annotations.gtf"
+  - genome:
+      type: file
+      description: Reference genome FASTA.
+      pattern: "*.{fa,fasta,fna}"
+
+output:
+  - annotated:
+      type: file
+      description: Spliced sequences of the reference transcripts.
+      pattern: "oarfish_annotated.fasta"
+  - novel:
+      type: file
+      description: Spliced sequences of the stranded novel models. Empty when there are none.
+      pattern: "oarfish_novel.fasta"
+  - summary:
+      type: file
+      description: Transcripts per category (reference, novel, novel_unstranded_left_out).
+      pattern: "oarfish_index_summary.tsv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"

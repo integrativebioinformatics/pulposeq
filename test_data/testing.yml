@@ -44,3 +44,13 @@ stranded_library: true
 # ------------------------------------------------------------------------------
 reference: "/full/path/to/pulposeq/test_data/references/Homo_sapiens.GRCh38.dna.chromosome.1.fa"
 annotation: "/full/path/to/pulposeq/test_data/references/Homo_sapiens.GRCh38.116.chr1.gtf"
+
+# ------------------------------------------------------------------------------
+#  Expression filter and oarfish
+# ------------------------------------------------------------------------------
+# Pipeline defaults. Set run_oarfish to true to also test the oarfish path: the
+# test profile has resources for it, and the report then gains its Bambu vs oarfish
+# section. On this PacBio data oarfish runs with --seq-tech pac-bio-hifi.
+min_total_counts: 5
+run_oarfish: false
+oarfish_num_bootstraps: 30

@@ -14,7 +14,7 @@ easier to plan around than to discover in the results.
 ### Eukaryotic organisms
 
 Splice-aware alignment, the intron-based gffcompare class codes the classification
-depends on, and CPC2's coding-potential model all assume a eukaryotic
+depends on, the lncRNA discovery criteria, and CPC2's coding-potential model all assume a eukaryotic
 transcriptome. The pipeline has no meaningful behaviour on prokaryotic data.
 
 Reference annotations must come from **Ensembl or GENCODE**. Other sources use
@@ -128,6 +128,9 @@ After seeting up the samplesheet, follow up to set the pipeline parameters.
 | `restrand_min_frac` | Minimum oriented fraction, per sample; below it the run stops (default `0.80`, minimum `0.5`) |
 | `skip_class` | Skip transcriptome characterization; `bambu` still runs (runs MultiQC, then finishes pipeline execution) |
 | `ndr` | Bambu's novel discovery rate. Leave unset for Bambu's own automatic choice (see [below](#novel-discovery-rate)) |
+| `min_total_counts` | Keep a transcript only if its counts, summed across all samples, reach this value (default `5`). Applies to reference and novel transcripts (see [below](#expression-filter)) |
+| `run_oarfish` | Also quantify every Bambu model with oarfish (default `false`). When on, oarfish counts decide expression in the filter above (see [below](#oarfish)) |
+| `oarfish_num_bootstraps` | Bootstrap replicates oarfish computes per sample (default `20`; `0` turns them off) |
 
 ### Choosing which NanoComp reports to run
 
@@ -182,6 +185,92 @@ A lower NDR admits fewer, better-supported novel models; a higher one admits mor
 shifts the burden onto the evidence reported per candidate. Neither is a default worth
 recommending sight-unseen — if you fix it, record why.
 
+### Expression filter {#expression-filter}
+
+Right after Bambu, and before classification, one step decides which transcripts the
+rest of the pipeline sees. A transcript is kept if its counts, **summed across all
+samples**, reach `min_total_counts` (default `5`). How the counts are spread between
+samples does not matter: 5 reads in one sample and none elsewhere passes. The same
+step also removes novel models without a strand and novel models shorter than 500 nt;
+those two rules never apply to reference transcripts. A gene is kept if at least one
+of its transcripts is kept.
+
+The default is deliberately lenient. It sits within the 2–5 read range long-read
+discovery tools use (Bambu requires 2 reads per read class, FLAIR 3 per isoform,
+TALON-based studies commonly 5), and it is meant to answer one question: is there any
+real evidence this transcript is expressed? It is **not** a differential-expression
+filter. That filtering depends on the study design and sequencing depth, so apply your
+own (for example edgeR's `filterByExpr`) to the output count tables before testing.
+
+Lowering `min_total_counts` keeps more lowly expressed transcripts, which matters most
+for novel lncRNAs; raising it keeps fewer. How many transcripts each rule removed is
+written to `transcriptome/curated/metadata/filter_summary.tsv`.
+
+### Quantification with oarfish {#oarfish}
+
+`run_oarfish true` adds a second quantification with
+[oarfish](https://github.com/COMBINE-lab/oarfish). Bambu counts reads from their
+alignments to the genome; oarfish maps each sample's reads directly to transcript
+sequences, with its built-in mapper, and estimates how many reads each transcript
+produced. It also computes bootstrap replicates (`oarfish_num_bootstraps`, default
+`20`), which measure how uncertain each estimate is.
+
+**What oarfish quantifies against.** Every model Bambu assembled: every reference
+transcript and every novel model, before any filtering. That way, reads from models
+the expression filter later removes stay on those models instead of being pushed onto
+the transcripts that are kept. The one exception is novel models without a strand,
+which are left out because oarfish only accepts reads aligned in a transcript's own
+orientation (every read reaching it is already oriented).
+
+**When oarfish runs, its counts decide expression.** The [expression filter](#expression-filter)
+then sums oarfish counts instead of Bambu's. This changes which transcripts end up in
+the results, not just which files are written: two runs on the same data, with and
+without oarfish, can give different novel lncRNA lists. A transcript kept on oarfish
+counts stays in Bambu's tables even if Bambu gave it no reads. Which source decided is
+written at the top of `transcriptome/curated/metadata/filter_summary.tsv`.
+
+**Settings that follow your library.**
+
+| `library` | oarfish `--seq-tech` | Mapping preset |
+|---|---|---|
+| `ONT_cDNA` | `ont-cdna` | `map-ont` |
+| `ONT_DRS` | `ont-drna` | `map-ont` |
+| `PacBio` (with `map_hq` unset or `true`) | `pac-bio-hifi` | `map-hifi` |
+| `PacBio` with `map_hq false` | `pac-bio` | `map-pb` |
+
+oarfish runs with `--filter-group no-filters --model-coverage` (fixed by the nf-core
+module) and `-d fw`.
+
+**How these settings compare with the oarfish paper** (Zare Jousheghani et al. 2025,
+and its analysis scripts, COMBINE-lab/oarfish-paper-scripts):
+
+| Setting | Paper | pulposeq |
+|---|---|---|
+| Coverage model | With and without; with (`--model-coverage`) performed best | Always on |
+| Alignment filters | `--filter-group no-filters` (main results) | Same |
+| Strand | `-d fw` for direct RNA only; both strands allowed for cDNA and PacBio | `-d fw` for every library, because every read reaching oarfish is oriented (the same reason minimap2 runs with `-uf`) |
+| `--seq-tech` | `ont-cdna`, `ont-drna`, `pac-bio` (RSII), `pac-bio-hifi` | Same mapping (table above) |
+| Score weight `exp((AS - AS_max) / D)` | The paper's Eq. 3 states `D = 10`; the released oarfish code uses `D = 5` (hard-coded up to 0.9, `--score-prob-denom` default from 0.10) | oarfish default, `D = 5` |
+| Read-mode mapper | minimap2 (through minimap2-rs) | rammap, which replaced minimap2-rs in oarfish 0.10.0. oarfish notes that raw-read results "may differ slightly" from the minimap2-based ones |
+| Bootstraps | Not evaluated | 30 by default |
+
+The paper's accuracy benchmarks quantify alignment (BAM) input; raw-read mode appears
+there in the runtime and memory comparison. The version pinned by the nf-core module,
+0.10.3, includes the 0.10.2 fix for ONT direct-RNA reads basecalled with `U`, which
+earlier 0.10 releases failed to map in raw-read mode.
+
+`run_oarfish` needs Bambu's models, so it cannot be combined with `skip_minimap2` or
+`skip_bambu`.
+
+> [!NOTE]
+> oarfish works from transcript sequences only. A read from a region Bambu never
+> assembled has no matching transcript and may be assigned to a similar sequence
+> elsewhere. Including every Bambu model reduces this but cannot remove it. Published
+> benchmarks of oarfish so far cover annotated transcripts, not novel ones.
+
+Each sample's raw oarfish output, and a per-sample summary with mapping rate and
+agreement with Bambu, are written to `transcriptome/oarfish/`; the curated oarfish tables, restricted to the same transcripts as Bambu's, to `transcriptome/curated/counts/` (see the output documentation).
+
 ### Coding potential
 
 Novel transcripts are evaluated by a
@@ -189,7 +278,7 @@ coding-potential call from [CPC2](https://github.com/gao-lab/CPC2_standalone),
 so the predictor decides what the pipeline's main output contains. CPC2 is
 organism-agnostic and needs no species-specific model.
 
-Its output is published to `coding_potential/`, and every novel record carries a
+Its output is published to `transcriptome/classification/`, and every novel record carries a
 `coding_predictor` column naming the tool and a `coding_prob` column holding
 P(coding), followed by the CPC2 features behind the call: `peptide_length`,
 `Fickett_score`, `pI` and `ORF_integrity`.

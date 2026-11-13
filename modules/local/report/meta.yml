@@ -68,6 +68,22 @@ input:
       type: file
       description: Exon length distribution for novel protein-coding transcripts.
       pattern: "*.csv"
+  - validation_summary:
+      type: file
+      description: Curation yield, measured against the expression source.
+      pattern: "validation_summary.csv"
+  - filter_summary:
+      type: file
+      description: PREFILTER's per-rule summary; its header names the expression source and min_total_counts.
+      pattern: "filter_summary.tsv"
+  - read_support:
+      type: file
+      description: CURATE's per-transcript Bambu read support, plus oarfish totals and mean InfRV when oarfish ran.
+      pattern: "transcript_read_support.tsv"
+  - oarfish_summary:
+      type: file
+      description: oarfish's per-sample summary and comparison with Bambu. An empty list unless oarfish ran.
+      pattern: "oarfish_summary.tsv"
   - qmd_report:
       type: file
       description: Quarto markdown report template file.

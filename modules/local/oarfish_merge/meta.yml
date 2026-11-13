@@ -1,0 +1,88 @@
+name: "oarfish_merge"
+description: >-
+  Combine oarfish's per-sample quantifications into one table per measure, in
+  Bambu's layout (TXNAME, GENEID, one column per sample), gather the bootstrap
+  replicates, and summarise each sample.
+keywords:
+  - oarfish
+  - quantification
+  - bootstraps
+  - long-read
+tools:
+  - r:
+      description: R statistical computing environment.
+      homepage: https://www.r-project.org/
+      licence: ["GPL-2.0-or-later"]
+  - arrow:
+      description: R interface to Apache Arrow, used to read oarfish's Parquet bootstrap files.
+      homepage: https://arrow.apache.org/docs/r/
+      licence: ["Apache-2.0"]
+
+input:
+  - quants:
+      type: file
+      description: Every sample's oarfish quantification (tname, len, num_reads).
+      pattern: "*.quant"
+  - infreps:
+      type: file
+      description: Every sample's bootstrap replicates. An empty list when --oarfish_num_bootstraps is 0.
+      pattern: "*.infreps.pq"
+  - meta_info:
+      type: file
+      description: Every sample's oarfish run information.
+      pattern: "*.meta_info.json"
+  - bambu_counts:
+      type: file
+      description: Bambu's transcript counts, used for the transcript-to-gene map and the correlation check.
+      pattern: "BambuOutput_counts_transcript.txt"
+  - index_summary:
+      type: file
+      description: Transcripts in oarfish's index, from OARFISH_INDEX_FASTA.
+      pattern: "oarfish_index_summary.tsv"
+  - library:
+      type: string
+      description: ONT_cDNA, ONT_DRS or PacBio. TPM is written for PacBio only.
+  - r_script:
+      type: file
+      description: The oarfish_merge.R script staged from bin/.
+      pattern: "oarfish_merge.R"
+
+output:
+  - counts_transcript:
+      type: file
+      description: Estimated reads per transcript and sample, for every model in oarfish's index. Expression source for PREFILTER.
+      pattern: "oarfish_counts_transcript.txt"
+  - counts_gene:
+      type: file
+      description: Transcript counts summed per gene.
+      pattern: "oarfish_counts_gene.txt"
+  - cpm_transcript:
+      type: file
+      description: Counts per million, computed over every model in the index.
+      pattern: "oarfish_CPM_transcript.txt"
+  - tpm_transcript:
+      type: file
+      description: Transcripts per million, PacBio libraries only.
+      pattern: "oarfish_TPM_transcript.txt"
+  - bootstraps:
+      type: file
+      description: Named list, one matrix per sample (transcripts x bootstrap replicates).
+      pattern: "oarfish_bootstraps.rds"
+  - meta_info:
+      type: file
+      description: Every scalar field of each sample's meta_info.json, as sample / field / value rows.
+      pattern: "oarfish_meta_info.tsv"
+  - summary:
+      type: file
+      description: >-
+        Per sample: reads assigned, transcripts with reads, bootstrap replicates,
+        Spearman correlation with Bambu over transcripts either tool saw reads for,
+        and the size of oarfish's index.
+      pattern: "oarfish_summary.tsv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"

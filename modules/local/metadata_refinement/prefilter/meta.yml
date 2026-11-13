@@ -1,0 +1,106 @@
+name: "prefilter"
+description: >-
+  Decide which transcripts every later step sees, right after Bambu and before
+  classification. Removes unstranded novel models, novel models shorter than 500 nt,
+  and any transcript whose counts summed across all samples fall below
+  --min_total_counts. The counts come from Bambu, or from oarfish when it runs.
+keywords:
+  - filtering
+  - expression
+  - bambu
+  - novel transcripts
+  - lncRNA
+tools:
+  - r:
+      description: R statistical computing environment.
+      homepage: https://www.r-project.org/
+      licence: ["GPL-2.0-or-later"]
+  - optparse:
+      description: Command line option parser for R.
+      homepage: https://cran.r-project.org/package=optparse
+      licence: ["GPL-2.0-or-later"]
+
+input:
+  - counts_transcript:
+      type: file
+      description: Transcript-level read counts from Bambu (TXNAME, GENEID, one column per sample).
+      pattern: "BambuOutput_counts_transcript.txt"
+  - counts_gene:
+      type: file
+      description: Gene-level read counts from Bambu (GENEID, one column per sample).
+      pattern: "BambuOutput_counts_gene.txt"
+  - cpm_transcript:
+      type: file
+      description: Transcript-level CPM values from Bambu.
+      pattern: "BambuOutput_CPM_transcript.txt"
+  - full_length_counts_transcript:
+      type: file
+      description: Full-length read counts per transcript from Bambu.
+      pattern: "BambuOutput_fullLengthCounts_transcript.txt"
+  - unique_counts_transcript:
+      type: file
+      description: Unique read counts per transcript from Bambu.
+      pattern: "BambuOutput_uniqueCounts_transcript.txt"
+  - novel_gtf:
+      type: file
+      description: Bambu's novel transcript models (BambuTx prefix).
+      pattern: "bambu_novel_transcripts.gtf"
+  - expression_source:
+      type: string
+      description: Which counts decide expression, "bambu" or "oarfish".
+  - oarfish_counts:
+      type: file
+      description: >-
+        oarfish count table (TXNAME, GENEID, one column per sample) covering every
+        model in oarfish's index. An empty list unless expression_source is "oarfish".
+  - min_total_counts:
+      type: number
+      description: Minimum counts summed across all samples for a transcript to be kept.
+  - r_script:
+      type: file
+      description: The prefilter_transcripts.R script staged from bin/.
+      pattern: "prefilter_transcripts.R"
+
+output:
+  - counts_transcript_filter:
+      type: file
+      description: Transcript counts for the kept transcripts. A transcript kept on oarfish counts stays here even if Bambu gave it 0 reads.
+      pattern: "BambuOutput_counts_transcript_filter.txt"
+  - counts_gene_filter:
+      type: file
+      description: Gene counts for genes with at least one kept transcript.
+      pattern: "BambuOutput_counts_gene_filter.txt"
+  - cpm_transcript_filter:
+      type: file
+      description: Transcript CPM for the kept transcripts.
+      pattern: "BambuOutput_CPM_transcript_filter.txt"
+  - full_length_counts_transcript_filter:
+      type: file
+      description: Full-length counts for kept transcripts with at least one full-length read.
+      pattern: "BambuOutput_fullLengthCounts_transcript_filter.txt"
+  - unique_counts_transcript_filter:
+      type: file
+      description: Unique counts for kept transcripts with at least one unique read.
+      pattern: "BambuOutput_uniqueCounts_transcript_filter.txt"
+  - novel_gtf:
+      type: file
+      description: The kept novel models, lines copied unchanged from Bambu's GTF. Input to classification.
+      pattern: "bambu_novel_transcripts_prefiltered.gtf"
+  - kept_transcripts:
+      type: file
+      description: One kept transcript identifier per line.
+      pattern: "prefilter_kept_transcripts.txt"
+  - summary:
+      type: file
+      description: >-
+        Transcripts in, removed by each rule and kept, split into reference and
+        novel, plus genes in and kept. Header comments record the expression source
+        and thresholds.
+      pattern: "filter_summary.tsv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+
+authors:
+  - "@borgessbarbara"

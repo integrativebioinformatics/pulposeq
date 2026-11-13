@@ -18,21 +18,21 @@ We can describe each step of the workflow as follows:
 5.  Quality control of mapped reads ([NanoComp](https://github.com/wdecoster/nanocomp "wdecoster/nanocomp"))
 6.  Per-base coverage tracks as `bigWig`, one per sample ([rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html) and [GenomicAlignments](https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html))
 7.  Transcriptome Assembly ([Bambu](https://www.bioconductor.org/packages/release/bioc/html/bambu.html))
-8.  Compare novel transcripts to the annotation reference ([GffCompare](https://github.com/gpertea/gffcompare "gpertea/gffcompare"))
-9.  Convert novel transcripts `GTF` file to `FASTA` ([GffRead](https://github.com/gpertea/gffread "gpertea/gffread"))
-10. Predict transcripts as protein-coding or non-coding ([CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone"))
-11. Gather all data from previous steps and generate informative and re-usable metadata `.csv` and `GTF` files for both novel and annotated transcripts, with biotypes read directly from the supplied reference annotation ([tidyverse](https://tidyverse.org/), [rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html), and [GenomicRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html))
-12. Restrict the count matrices and `GTF` files to the curated set, and attach biotype and classification attributes to the validated annotations
-13. Regenerate Bambu's PCA and expression heatmaps from the curated transcriptome, so the sample-level view can be read beside the one built from the raw assembly
-14. Draw genomic context figures over the coverage tracks — known genes carrying novel isoforms, and the sense-intronic candidates, which lie inside a host intron on the host's own strand and cannot be resolved from the assembly alone ([plotgardener](https://bioconductor.org/packages/release/bioc/html/plotgardener.html))
-15. Provide a report and data visualization for the full transcriptome, with emphasis on lncRNAs ([Quarto](https://quarto.org/), [tidyverse](https://tidyverse.org/), [cowplot](https://cran.r-project.org/web/packages/cowplot/index.html), [scales](https://cran.r-project.org/web/packages/scales/index.html), etc)
-16. Gather all possible QC information from the previous steps ([MultiQC](https://github.com/MultiQC/MultiQC "MultiQC"))
+8.  Optionally, quantify every Bambu model again with bootstrap replicates, mapping the reads directly to the transcript sequences ([oarfish](https://github.com/COMBINE-lab/oarfish "COMBINE-lab/oarfish"), with `--run_oarfish true`). Its counts then decide which transcripts count as expressed
+9.  Filter transcripts once, before classification: novel models without a strand or shorter than 500 nt, and any transcript below `--min_total_counts` summed across all samples
+10. Compare novel transcripts to the annotation reference ([GffCompare](https://github.com/gpertea/gffcompare "gpertea/gffcompare"))
+11. Convert novel transcripts `GTF` file to `FASTA` ([GffRead](https://github.com/gpertea/gffread "gpertea/gffread"))
+12. Predict transcripts as protein-coding or non-coding ([CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone"))
+13. Gather all data from previous steps and generate informative and re-usable metadata `.csv` and `GTF` files for both novel and annotated transcripts, with biotypes read directly from the supplied reference annotation ([tidyverse](https://tidyverse.org/), [rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html), and [GenomicRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html))
+14. Restrict the count matrices and `GTF` files to the curated set, and attach biotype and classification attributes to the validated annotations
+15. Regenerate Bambu's PCA and expression heatmaps from the curated transcriptome, so the sample-level view can be read beside the one built from the raw assembly
+16. Draw genomic context figures over the coverage tracks — known genes carrying novel isoforms, and the sense-intronic candidates, which lie inside a host intron on the host's own strand and cannot be resolved from the assembly alone ([plotgardener](https://bioconductor.org/packages/release/bioc/html/plotgardener.html))
+17. Provide a report and data visualization for the full transcriptome, with emphasis on lncRNAs ([Quarto](https://quarto.org/), [tidyverse](https://tidyverse.org/), [cowplot](https://cran.r-project.org/web/packages/cowplot/index.html), [scales](https://cran.r-project.org/web/packages/scales/index.html), etc)
+18. Gather all possible QC information from the previous steps ([MultiQC](https://github.com/MultiQC/MultiQC "MultiQC"))
 
 ## Usage
 
-pulposeq is compatible with **Ensembl or GENCODE** reference genomes and annotations. Transcript and gene biotypes are read directly from the annotation you supply, so no Ensembl release or BioMart dataset needs to be declared.
-
-Coding potential is predicted with [CPC2](https://github.com/gao-lab/CPC2_standalone "gao-lab/CPC2_standalone"), which is organism-agnostic — so **the pipeline is not restricted to a fixed species list**. Any eukaryote with an Ensembl or GENCODE annotation is in scope; splice-aware alignment and the intron-based gffcompare class codes are what make the eukaryotic assumption, not the predictor.
+pulposeq is designed compatible with **Ensembl or GENCODE** reference eukaryote genomes and annotations. Transcript and gene biotypes are read directly from the annotation you supply, so no Ensembl release or BioMart dataset needs to be declared.
 
 See [Coding potential](docs/usage.md#coding-potential).
 
@@ -146,9 +146,7 @@ CAPES (001), CNPq (MCTI/FNDCT 445067/2024-1), FONDECYT-ANID Postdoctorado (32504
 
 #### Laboratories & Institutions Involved
 
-#### Laboratories & Institutions Involved
-
-Bárbara Borges<sup>1,2,3</sup>, Izabela Mamede<sup>4,5</sup>, Lucas Freitas<sup>4,5</sup>, Sebastian Urquiza-Zurich<sup>6,7</sup>, Joyce Karoline Silva<sup>3,8,9</sup>, Samuel Ismael<sup>1</sup>, Gleison Azevedo<sup>1</sup>, João Vitor Cavalcante<sup>1</sup>, Rodrigo JS Dalmolin<sup>1</sup>, Thaís Gaudencio do Rêgo<sup>1,2\*</sup>, Vinicius Maracaja-Coutinho<sup>1,3,8,10\*</sup>
+Bárbara Borges<sup>1,2,3</sup>, Izabela Mamede<sup>4,5</sup>, Lucas Freitas<sup>4,5</sup>, Sebastian Urquiza-Zurich<sup>6,7</sup>, Joyce Karoline Silva<sup>3,8,9</sup>, Gleison Azevedo<sup>1</sup>, João Vitor Cavalcante<sup>1</sup>, Rodrigo JS Dalmolin<sup>1</sup>, Thaís Gaudencio do Rêgo<sup>1,2\*</sup>, Vinicius Maracaja-Coutinho<sup>1,3,8,10\*</sup>
 
 <sup>\*</sup> Co-corresponding authors
 

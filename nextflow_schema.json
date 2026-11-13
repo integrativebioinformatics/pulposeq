@@ -234,6 +234,26 @@
         "ndr": {
             "type": "number",
             "description": "Bambu Novel Discovery Rate (NDR) threshold for novel transcript classification."
+        },
+        "min_total_counts": {
+            "type": "number",
+            "default": 5,
+            "minimum": 0,
+            "description": "Keep a transcript only if its counts, summed across all samples, reach this value. Applied once, before classification, to reference and novel transcripts alike. A lenient detection filter: how the counts are spread between samples does not matter. It is not meant as a differential-expression filter, which depends on the study design and belongs in the user's own analysis.",
+            "fa_icon": "fas fa-filter"
+        },
+        "run_oarfish": {
+            "type": "boolean",
+            "default": false,
+            "description": "Quantify transcripts with oarfish as well as Bambu. oarfish maps each sample's filtered reads to the sequences of every Bambu model (reference transcripts plus stranded novel models) and estimates reads per transcript, with bootstrap replicates. When on, oarfish counts replace Bambu counts in the expression filter, so this changes which transcripts end up in the results, not only which files are written. Needs Bambu, so it cannot be combined with --skip_minimap2 or --skip_bambu.",
+            "fa_icon": "fas fa-fish"
+        },
+        "oarfish_num_bootstraps": {
+            "type": "integer",
+            "default": 30,
+            "minimum": 0,
+            "description": "Bootstrap replicates oarfish computes per sample, a measure of how uncertain each transcript's estimate is. More replicates give a better estimate of that uncertainty but take longer. 0 turns them off.",
+            "fa_icon": "fas fa-dice"
         }
     }
 }

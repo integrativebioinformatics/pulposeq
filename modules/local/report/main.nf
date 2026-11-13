@@ -31,21 +31,21 @@ process RENDER_REPORT {
     path intronic_context_candidates
     path intronic_context_figures
 
-    // raw bambu plots (pre-refinement assembly)
+    // transcript-level PCA and heatmap, every quantified model and the curated
+    // set, from Bambu or (when it ran) oarfish counts
     path raw_pca
     path raw_pca_grouped
-    path raw_heatmap_gene
     path raw_heatmap_transcript
-
-    // regenerated plots from the validated transcriptome
     path post_pca
     path post_pca_grouped
-    path post_heatmap_gene
     path post_heatmap_transcript
 
     // run metrics
     path bambu_metrics
     path validation_summary
+    path filter_summary             // PREFILTER's per-rule summary
+    path read_support               // CURATE's per-transcript read support
+    path oarfish_summary            // empty list unless oarfish ran
 
     // quarto template
     path qmd_report
@@ -60,6 +60,7 @@ process RENDER_REPORT {
     task.ext.when == null || task.ext.when
 
     script:
+    def oarfish_param = oarfish_summary ? "-P oarfish_summary:${oarfish_summary}" : ''
     """
     export XDG_CACHE_HOME=/tmp/quarto_cache_home
     export XDG_DATA_HOME=/tmp/quarto_data_home
@@ -82,14 +83,15 @@ process RENDER_REPORT {
         -P intronic_context_candidates:${intronic_context_candidates} \\
         -P raw_pca:${raw_pca} \\
         -P raw_pca_grouped:${raw_pca_grouped} \\
-        -P raw_heatmap_gene:${raw_heatmap_gene} \\
         -P raw_heatmap_transcript:${raw_heatmap_transcript} \\
         -P post_pca:${post_pca} \\
         -P post_pca_grouped:${post_pca_grouped} \\
-        -P post_heatmap_gene:${post_heatmap_gene} \\
         -P post_heatmap_transcript:${post_heatmap_transcript} \\
         -P bambu_metrics:${bambu_metrics} \\
         -P validation_summary:${validation_summary} \\
+        -P filter_summary:${filter_summary} \\
+        -P read_support:${read_support} \\
+        ${oarfish_param} \\
         --to html
 
     cat <<-END_VERSIONS > versions.yml
