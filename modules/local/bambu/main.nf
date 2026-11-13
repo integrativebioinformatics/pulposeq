@@ -2,8 +2,8 @@ process BAMBU {
     label 'process_bambu'
 
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
-        'docker://itsiaguara/pulposeq:test':
-        'docker.io/itsiaguara/pulposeq:test' }"
+        'docker://itsiaguara/pulposeq:1.0.0':
+        'docker.io/itsiaguara/pulposeq:1.0.0' }"
 
     input:
     val bam_list

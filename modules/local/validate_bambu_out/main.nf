@@ -2,8 +2,8 @@ process VALIDATE_BAMBU_OUTPUTS {
     label 'process_post_refinement'
 
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
-        'docker://itsiaguara/pulposeq:test':
-        'docker.io/itsiaguara/pulposeq:test' }"
+        'docker://itsiaguara/pulposeq:1.0.0':
+        'docker.io/itsiaguara/pulposeq:1.0.0' }"
 
     input:
     path se_rds
