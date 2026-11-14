@@ -131,23 +131,15 @@ An extensive list of references for the tools incorporated by the pipeline can b
 
 ## Acknowledgments
 
-#### Development & Contributions
-
-The `pulposeq` pipeline was originally developed by **Bárbara Borges** ([\@borgessbarbara](https://github.com/borgessbarbara)). We extend our sincere thanks to **Lucas Freitas** ([\@lfreitasl](https://github.com/lfreitasl)), **Gleison Azevedo** ([\@gleisonm](https://github.com/gleisonm)) and **João Cavalcante** ([\@jvfe](https://github.com/jvfe)) for their significant contributions and assistance during development.
-
-#### Supervision & Collaborations
-
-This project was developed under the supervision of **Vinicius Maracaja-Coutinho** and **Thaís Gaudencio**, in collaboration with **Rodrigo Dalmolin** and the [Dalmolin Systems Biology Group](https://github.com/dalmolingroup)
-
-#### Computational resources
+### Computational resources
 
 This project was supported by the High-Performance Computing Center at UFRN (NPAD/UFRN) and the National Laboratory for High Performance Computing (NLHPC) (CCSS210001) at UChile.
 
-#### Funding
+### Funding
 
 CAPES (001), CNPq (MCTI/FNDCT 445067/2024-1), FONDECYT-ANID Postdoctorado (3250452), FONDECYT-ANID (1211731), FONDAP-ANID (15130011 and 1523A0008), and Anillo-ANID (ATE220016).
 
-#### Laboratories & Institutions Involved
+### Laboratories & Institutions Involved
 
 Bárbara Borges<sup>1,2,3</sup>, Izabela Mamede<sup>4,5</sup>, Lucas Freitas<sup>4,5</sup>, Sebastian Urquiza-Zurich<sup>6,7</sup>, Joyce Karoline Silva<sup>3,8,9</sup>, Gleison Azevedo<sup>1</sup>, João Vitor Cavalcante<sup>1</sup>, Rodrigo JS Dalmolin<sup>1</sup>, Thaís Gaudencio do Rêgo<sup>1,2\*</sup>, Vinicius Maracaja-Coutinho<sup>1,3,8,10\*</sup>
 
