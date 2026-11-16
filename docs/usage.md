@@ -252,7 +252,7 @@ and its analysis scripts, COMBINE-lab/oarfish-paper-scripts):
 | `--seq-tech` | `ont-cdna`, `ont-drna`, `pac-bio` (RSII), `pac-bio-hifi` | Same mapping (table above) |
 | Score weight `exp((AS - AS_max) / D)` | The paper's Eq. 3 states `D = 10`; the released oarfish code uses `D = 5` (hard-coded up to 0.9, `--score-prob-denom` default from 0.10) | oarfish default, `D = 5` |
 | Read-mode mapper | minimap2 (through minimap2-rs) | rammap, which replaced minimap2-rs in oarfish 0.10.0. oarfish notes that raw-read results "may differ slightly" from the minimap2-based ones |
-| Bootstraps | Not evaluated | 30 by default |
+| Bootstraps | Not evaluated | 20 by default |
 
 The paper's accuracy benchmarks quantify alignment (BAM) input; raw-read mode appears
 there in the runtime and memory comparison. The version pinned by the nf-core module,
