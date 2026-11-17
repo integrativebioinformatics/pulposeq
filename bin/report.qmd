@@ -1350,12 +1350,7 @@ The classification is tracked throughout the report and summarized in the **Trac
 
 The structural and transcriptional complexity of eukaryotic genomes makes lncRNA classification challenging. Long non-coding transcripts may occur in intergenic, intronic, antisense, or overlapping genomic contexts and can originate from loci associated with diverse annotated gene biotypes, including protein-coding genes, pseudogenes, and other non-coding transcripts. Consequently, assigning transcript identity solely on the basis of the host locus biotype may overlook important features of the transcript itself.
 
-To address this limitation, pulposeq implements a dual-layer classification strategy for novel transcript isoforms. Rather than inheriting the annotation of the parent locus, each novel transcript is evaluated independently based on:
-
-1.  **Coding potential predictions**.
-2.  **Structural characteristics**, including transcript length, exon-intron architecture, and its relationship to reference transcript models.
-
-As a result, a transcript lacking coding potential is classified as a **novel lncRNA** even when it originates from a previously annotated protein-coding locus or another gene biotype. This approach distinguishes locus annotation from transcript identity and enables a more accurate representation of transcriptional complexity.
+To address this limitation, pulposeq implements a dual-layer classification strategy for novel transcript isoforms. Rather than simply inheriting the parent locus’s biotype, each novel transcript is judged on its own coding potential and structure (including transcript length, exon-intron architecture, and its relationship to reference transcript models); the reference gene’s biotype is used only for models that share splice structure with it. As a result, a non-coding transcript that lies within an intron of, or antisense to, a protein-coding gene is still reported as a novel lncRNA candidate, whereas one that shares splice structure with a protein-coding transcript is reported as predicted non-coding.
 
 The classification framework follows current recommendations proposed by Mattick and colleagues [^7] for the annotation and nomenclature of lncRNAs.
 
